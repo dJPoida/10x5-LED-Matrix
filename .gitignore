@@ -1,0 +1,6 @@
+node_modules
+media_library
+log
+config.json
+
+.vscode/launch.json

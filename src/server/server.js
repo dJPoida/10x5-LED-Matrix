@@ -1,5 +1,7 @@
 const ws281x = require('rpi-ws281x-native');
 
+console.log(process.env);
+
 const COLS = 10;
 const ROWS = 5;
 
@@ -27,7 +29,6 @@ process.on('SIGINT', function () {
 var offset = 0;
 
 // Rainbow
-/*
 setInterval(function () {
   for (let r = 0; r < ROWS; r += 1) {
     for (var c = 0; c < COLS; c += 1) {
@@ -38,9 +39,9 @@ setInterval(function () {
 
   ws281x.render(pixelData);
 }, 1000 / 60);
-*/
 
 
+/*
 // Iteration of each individual LED
 setInterval(function () {
   var i=NUM_LEDS;
@@ -54,7 +55,7 @@ setInterval(function () {
   ws281x.render(pixelData);
 }, 1000 / 60);
 console.log('Press <ctrl>+C to exit.');
-
+*/
 
 // rainbow-colors, taken from http://goo.gl/Cs3H0v
 function colorwheel(pos) {

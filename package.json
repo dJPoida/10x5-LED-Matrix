@@ -14,22 +14,35 @@
   "main": "server.js",
   "dependencies": {
     "nodemon": "^1.19.1",
+    "react": "^16.8.6",
     "rpi-ws281x-native": "^0.9.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "eslint": "^6.0.1",
+    "eslint-config-airbnb": "^17.1.1",
+    "html-webpack-plugin": "^3.2.0",
+    "mini-css-extract-plugin": "^0.7.0",
+    "node-sass": "^4.12.0",
+    "sass-loader": "^7.1.0",
+    "webpack": "^4.35.3",
+    "webpack-auto-inject-version": "^1.2.2",
+    "webpack-cli": "^3.3.5",
+    "webpack-dev-middleware": "^3.7.0",
+    "webpack-hot-middleware": "^2.25.0"
+  },
   "engines": {
     "node": ">=0.10.0"
   },
   "homepage": "https://github.com/dJPoida/10x5-LED-Matrix",
+  "scripts": {
+    "start": "sudo nodemon src/server/server.js ",
+    "dev": "sudo NODE_ENV=development nodemon --watch \"src/server/\" src/server/server.js "
+  },
   "keywords": [
     "raspberry",
     "ws2812b",
     "led",
     "nodejs",
     "matrix"
-  ],
-  "scripts": {
-    "start": "src/server/server.js ",
-    "dev": "export NODE_ENV=development && nodemon --watch \"src/server/\" src/server/server.js "
-  }
+  ]
 }
