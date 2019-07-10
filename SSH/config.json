@@ -1,0 +1,17 @@
+{
+  "root": "SSH",
+  "pidPath": "SSH/pids",
+  "sockPath": "SSH/sock",
+  "loglength": 100,
+  "logstream": false,
+  "columns": [
+    "uid",
+    "command",
+    "script",
+    "forever",
+    "pid",
+    "id",
+    "logfile",
+    "uptime"
+  ]
+}
