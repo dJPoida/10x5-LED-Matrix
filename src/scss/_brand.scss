@@ -1,0 +1,22 @@
+// Default SCSS color variables to be applied to css variables
+$color_blue: #374F66;
+$color_red: #FF5959;
+$color_green: #4F9D55;
+$color_yellow: #FACF5A;
+
+// Notifications and Warnings
+$color_success: #4F9D55;
+$color_warning: #FACF5A;
+$color_danger: #FF5959;
+$color_disabled: #707070;
+
+// 50 Shades of gray
+$color_black: #000;
+$color_gray: #707070;
+$color_white: #fff;
+
+// CSS Variables that can be overridden by config at runtime
+body {
+  // Speeds
+  --animation-speed: 0.25s; // There is a corresponding value in the `appConstants.js`
+}

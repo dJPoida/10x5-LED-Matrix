@@ -1,70 +1,82 @@
-const ws281x = require('rpi-ws281x-native');
+/* eslint-disable no-console */
 
-console.log(process.env);
+const path = require('path');
+const express = require('express');
+const bodyParser = require('body-parser');
 
-const COLS = 10;
-const ROWS = 5;
+const app = express();
+const http = require('http').Server(app);
 
-const NUM_LEDS = COLS * ROWS;
-const pixelData = new Uint32Array(NUM_LEDS);
+const config = require('./lib/Config');
 
-ws281x.init(NUM_LEDS);
-ws281x.setIndexMapping([
-  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,
-  10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-  29, 28, 27, 26, 25, 24, 23, 22, 21, 20,
-  30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
-  49, 48, 47, 46, 45, 44, 43, 42, 41, 40,
-]);
-ws281x.setBrightness(192);
+const LEDController = require('./lib/LEDController');
+const Router = require('./routes/Router');
 
-// ---- trap the SIGINT and reset before exit
-process.on('SIGINT', function () {
-  ws281x.reset();
-  process.nextTick(function () { process.exit(0); });
-});
+const distPath = path.resolve(__dirname, '../../dist');
+const clientPath = path.resolve(distPath, 'client');
 
+let ledController;
 
-// ---- animation-loop
-var offset = 0;
+app.set('mode', process.env.NODE_ENV || 'production');
+app.set('clientPath', path.resolve(__dirname, '../../dist/client/'));
+app.set('json spaces', 2);
 
-// Rainbow
-setInterval(function () {
-  for (let r = 0; r < ROWS; r += 1) {
-    for (var c = 0; c < COLS; c += 1) {
-      pixelData[r*COLS + c] = colorwheel((offset + r) % 256);
-    }
+const run = () => {
+  console.log('Initialising...');
+
+  // development
+  if (app.get('mode') === 'development') {
+    // use a webpack dev server with hot middleware
+    console.log('Development Environment: Starting Webpack Hot Reload...');
+
+    // eslint-disable-next-line import/no-extraneous-dependencies, global-require
+    const webpack = require('webpack');
+    // eslint-disable-next-line import/no-extraneous-dependencies, global-require
+    const webpackDevMiddleware = require('webpack-dev-middleware');
+    // eslint-disable-next-line global-require, import/no-dynamic-require
+    const webpackConfig = require(process.env.WEBPACK_CONFIG ? process.env.WEBPACK_CONFIG : '../../webpack.config');
+    const compiler = webpack(webpackConfig);
+
+    app.use(webpackDevMiddleware(
+      compiler, {
+        logLevel: 'warn',
+        publicPath: webpackConfig.output.publicPath,
+      },
+    ));
+
+    // Attach the hot middleware to the compiler & the server
+    // eslint-disable-next-line import/no-extraneous-dependencies, global-require
+    app.use(require('webpack-hot-middleware')(
+      compiler, {
+        log: console.log,
+        path: '/__webpack_hmr',
+        heartbeat: 2 * 1000,
+      },
+    ));
+  // production
+  } else {
+    console.log('Production Environment');
   }
-  offset = (offset + 1) % 256;
 
-  ws281x.render(pixelData);
-}, 1000 / 60);
+  // middleware
+  app.use(bodyParser.json());
 
+  // public assets
+  app.use(express.static(path.resolve(clientPath)));
 
-/*
-// Iteration of each individual LED
-setInterval(function () {
-  var i=NUM_LEDS;
-  while(i--) {
-      pixelData[i] = 0;
+  // API Routes
+  app.use(Router.registerRoutes(app, ledController));
+
+  // host server
+  try {
+    http.listen(config.installation.port, () => {
+      console.log(`listening on port ${config.installation.port}`);
+    });
+  } catch (ex) {
+    throw new Error(`Failed to begin http server on port ${config.installation.port}: ${ex}`);
   }
-  pixelData[offset] = 0xffffff;
-  //pixelData[offset] = colorwheel((offset + i) % 256);
+};
 
-  offset = (offset + 1) % NUM_LEDS;
-  ws281x.render(pixelData);
-}, 1000 / 60);
-console.log('Press <ctrl>+C to exit.');
-*/
-
-// rainbow-colors, taken from http://goo.gl/Cs3H0v
-function colorwheel(pos) {
-  pos = 255 - pos;
-  if (pos < 85) { return rgb2Int(255 - pos * 3, 0, pos * 3); }
-  else if (pos < 170) { pos -= 85; return rgb2Int(0, pos * 3, 255 - pos * 3); }
-  else { pos -= 170; return rgb2Int(pos * 3, 255 - pos * 3, 0); }
-}
-
-function rgb2Int(r, g, b) {
-  return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
-}
+// Fire up the led controller
+ledController = new LEDController(http, config);
+run();

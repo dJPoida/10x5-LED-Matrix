@@ -1,0 +1,18 @@
+{
+    "editor.formatOnSave": false,
+    "eslint.autoFixOnSave": true,
+    "editor.tabSize": 2,
+    "todo-tree.flat": true,
+    "todo-tree.tags": [
+      "TODO",
+      "@TODO",
+      "@todo",
+      "@Todo",
+      "@deprecated",
+      "@test",
+      "@note",
+      "@Note"
+    ],
+    "todo-tree.regex": "((//|#|<!--|;|/\\*|\\*|^)\\s*($TAGS)|^\\s*- \\[ \\])",
+    "todo-tree.grouped": false,
+}
