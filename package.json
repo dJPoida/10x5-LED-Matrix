@@ -1,72 +1,74 @@
 {
-  "name": "10x5-led-matrix",
-  "version": "0.0.1",
-  "description": "Control my test 10x5 LED matrix using Raspberry Pi Zero(w) and Node JS",
-  "license": "MIT",
-  "author": {
-    "name": "Peter Eldred",
-    "email": "djpoida@gmail.com"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/dJPoida/10x5-LED-Matrix.git"
-  },
-  "main": "server.js",
-  "dependencies": {
-    "body-parser": "^1.19.0",
-    "express": "^4.17.1",
-    "html-webpack-harddisk-plugin": "^1.0.1",
-    "mini.css": "^3.0.1",
-    "nodemon": "^1.19.1",
-    "promise": "^8.0.3",
-    "prop-types": "^15.7.2",
-    "react": "^16.8.6",
-    "react-dom": "^16.8.6",
-    "request": "^2.88.0",
-    "rpi-ws281x-native": "^0.9.0",
-    "socket.io": "^2.2.0",
-    "socket.io-client": "^2.2.0"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.5.4",
-    "@babel/plugin-proposal-class-properties": "^7.5.0",
-    "@babel/preset-env": "^7.5.4",
-    "@babel/preset-react": "^7.0.0",
-    "babel-eslint": "^10.0.2",
-    "babel-loader": "^8.0.6",
-    "clean-webpack-plugin": "^3.0.0",
-    "copy-webpack-plugin": "^5.0.3",
-    "css-hot-loader": "^1.4.4",
-    "css-loader": "^3.0.0",
-    "ejs-loader": "^0.3.3",
-    "eslint": "^6.0.1",
-    "eslint-config-airbnb": "^17.1.1",
-    "eslint-plugin-import": "^2.18.0",
-    "eslint-plugin-jsx-a11y": "^6.2.3",
-    "eslint-plugin-react": "^7.14.2",
-    "html-webpack-plugin": "^3.2.0",
-    "mini-css-extract-plugin": "^0.7.0",
-    "node-sass": "^4.12.0",
-    "sass-loader": "^7.1.0",
-    "webpack": "^4.35.3",
-    "webpack-auto-inject-version": "^1.2.2",
-    "webpack-cli": "^3.3.5",
-    "webpack-dev-middleware": "^3.7.0",
-    "webpack-hot-middleware": "^2.25.0"
-  },
-  "engines": {
-    "node": ">=0.10.0"
-  },
-  "homepage": "https://github.com/dJPoida/10x5-LED-Matrix",
-  "scripts": {
-    "start": "sudo nodemon src/server/server.js ",
-    "dev": "sudo NODE_ENV=development nodemon --watch \"src/server/\" src/server/server.js "
-  },
-  "keywords": [
-    "raspberry",
-    "ws2812b",
-    "led",
-    "nodejs",
-    "matrix"
-  ]
+    "name": "led-matrix",
+    "version": "0.0.4",
+    "description": "Remotely control an LED matrix using Raspberry Pi and Node JS",
+    "license": "MIT",
+    "author": {
+        "name": "Peter Eldred",
+        "email": "djpoida@gmail.com"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/dJPoida/LED-Matrix.git"
+    },
+    "main": "server.js",
+    "dependencies": {
+        "body-parser": "^1.19.0",
+        "express": "^4.17.1",
+        "html-webpack-harddisk-plugin": "^1.0.1",
+        "mini.css": "^3.0.1",
+        "nodemon": "^1.19.1",
+        "promise": "^8.0.3",
+        "prop-types": "^15.7.2",
+        "react": "^16.8.6",
+        "react-dom": "^16.8.6",
+        "request": "^2.88.0",
+        "rpi-ws281x-native": "^0.9.0",
+        "socket.io": "^2.2.0",
+        "socket.io-client": "^2.2.0"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.5.4",
+        "@babel/plugin-proposal-class-properties": "^7.5.0",
+        "@babel/preset-env": "^7.5.4",
+        "@babel/preset-react": "^7.0.0",
+        "babel-eslint": "^10.0.2",
+        "babel-loader": "^8.0.6",
+        "clean-webpack-plugin": "^3.0.0",
+        "copy-webpack-plugin": "^5.0.3",
+        "css-hot-loader": "^1.4.4",
+        "css-loader": "^3.0.0",
+        "ejs-loader": "^0.3.3",
+        "eslint": "^6.0.1",
+        "eslint-config-airbnb": "^17.1.1",
+        "eslint-plugin-import": "^2.18.0",
+        "eslint-plugin-jsx-a11y": "^6.2.3",
+        "eslint-plugin-react": "^7.14.2",
+        "html-webpack-plugin": "^3.2.0",
+        "mini-css-extract-plugin": "^0.7.0",
+        "node-sass": "^4.12.0",
+        "sass-loader": "^7.1.0",
+        "webpack": "^4.35.3",
+        "webpack-auto-inject-version": "^1.2.2",
+        "webpack-cli": "^3.3.5",
+        "webpack-dev-middleware": "^3.7.0",
+        "webpack-hot-middleware": "^2.25.0"
+    },
+    "engines": {
+        "node": ">=0.10.0"
+    },
+    "homepage": "https://github.com/dJPoida/LED-Matrix",
+    "scripts": {
+        "start": "sudo nodemon src/server/server.js ",
+        "dev": "export NODE_ENV=development || SET \"NODE_ENV=development\" && nodemon --watch \"src/server/\" src/server/server.js ",
+        "build": "webpack --mode development --env.patch",
+        "deploy": "webpack --mode production"
+    },
+    "keywords": [
+        "raspberry",
+        "ws2812b",
+        "led",
+        "nodejs",
+        "matrix"
+    ]
 }

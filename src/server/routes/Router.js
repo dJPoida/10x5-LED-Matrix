@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const config = require('../lib/Config');
 
 const ROUTES = require('../../lib/constants/Routes');
 
@@ -12,14 +11,14 @@ const clientPath = path.resolve(distPath, 'client');
  * @description
  * Register routes on the express app
  *
- * @param {object} app the express app
- * @param {LEDController} ledController the ledController
+ * @param {object} server the express app
+ * @param {Kernel} kernel the application kernel
  */
-const registerRoutes = (app, ledController) => {
+const registerRoutes = (server, kernel) => {
 
   // Main App
   router.get(['/', ROUTES.MAIN_APP], (req, res) => {
-    res.sendFile(path.resolve(clientPath, 'index.html'));
+    res.sendFile(path.resolve(clientPath, 'main.html'));
   });
 
   // Emulator

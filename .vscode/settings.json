@@ -15,4 +15,5 @@
     ],
     "todo-tree.regex": "((//|#|<!--|;|/\\*|\\*|^)\\s*($TAGS)|^\\s*- \\[ \\])",
     "todo-tree.grouped": false,
+    "eslint.enable": true,
 }

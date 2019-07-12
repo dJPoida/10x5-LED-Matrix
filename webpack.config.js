@@ -1,6 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const CleanWebpackPlugin = require('clean-webpack-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const WebpackAutoInject = require('webpack-auto-inject-version');
@@ -22,7 +22,7 @@ const clientDistPath = path.resolve(distPath, 'client');
 const entryPoints = [
   // Main App
   {
-    name: 'app',
+    name: 'main',
   },
   // Main Scoreboard Display
   {
@@ -37,7 +37,7 @@ const entry = (() => {
 
   entryPoints.forEach((entryPoint) => {
     result[entryPoint.name] = [
-      path.resolve(sourceClientPath, entryPoint.type, 'apps', entryPoint.name, `${entryPoint.name}.js`),
+      path.resolve(sourceClientPath, 'apps', entryPoint.name, `${entryPoint.name}.js`),
       hotMiddlewareScript,
     ];
   });
@@ -126,7 +126,7 @@ module.exports = {
         appVerSuffix: appVersionSuffix,
         cssJsMinSuffix,
       },
-      template: path.resolve(sourceClientPath, entryPoint.type, 'apps', entryPoint.name, `${entryPoint.name}.html`),
+      template: path.resolve(sourceClientPath, 'apps', entryPoint.name, `${entryPoint.name}.html`),
       alwaysWriteToDisk: true,
     })),
 
