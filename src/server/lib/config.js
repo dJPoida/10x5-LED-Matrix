@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 
 const packageJson = require('../../../package.json');
-const updateObject = require('../lib/helpers/updateObject');
-const appConfig = require('./lib/defaultConfig');
+const updateObject = require('../../lib/helpers/updateObject');
+const appConfig = require('./defaultConfig');
 
 // Load the local config
 const localConfigPath = path.resolve(__dirname, '../../../config.json');
