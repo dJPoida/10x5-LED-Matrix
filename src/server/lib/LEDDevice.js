@@ -107,7 +107,7 @@ class LEDDevice extends EventEmitter {
     this.device.setBrightness(this.brightness);
 
     // Initialise the frame update timer
-    this._frameUpdateInterval = setInterval(this.updateFrame.bind(this), this.kernel.config.fps);
+    this._frameUpdateInterval = setInterval(this.updateFrame.bind(this), 1000 / this.kernel.config.fps);
 
     // Let everyone know that the LED Device is initialised
     this.emit(LED_DEVICE_EVENTS.INITIALISED);
@@ -140,6 +140,8 @@ class LEDDevice extends EventEmitter {
   updateFrame() {
     // @TODO: create some kind of mutex to prevent these variables from being accessed at the same time
     this._pixelData = [...this.kernel.layerBlender.pixelData];
+
+    console.log(this._pixelData);
 
     this.device.render(this.pixelData);
     this.emit(LED_DEVICE_EVENTS.FRAME_UPDATE);
