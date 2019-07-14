@@ -4,6 +4,7 @@ const EventEmitter = require('events');
 const bodyParser = require('body-parser');
 
 const LEDDevice = require('./LEDDevice');
+const LayerBlender = require('./LayerBlender');
 const Router = require('../routes/Router');
 
 const KERNEL_EVENTS = require('../../lib/constants/KernelEvents');
@@ -32,6 +33,7 @@ class Kernel extends EventEmitter {
     this._config = config;
     this._initialised = false;
     this._ledDevice = undefined;
+    this._layerBlender = undefined;
 
     this.bindEvents();
 
@@ -69,13 +71,26 @@ class Kernel extends EventEmitter {
 
 
   /**
+   * @type {layerBlender}
+   */
+  get layerBlender() { return this._layerBlender; }
+
+
+  /**
    * @description
    * Initialise the kernel
    */
   async initialise() {
     console.log('Kernel initialising...');
+
+    // Create the LED Device Controller
     this._ledDevice = new LEDDevice(this);
     await this.ledDevice.initialise();
+
+    // Crete the layer blender
+    this._layerBlender = new LayerBlender(this);
+    await this.layerBlender.initialise();
+
     this._initialised = true;
     this.emit(KERNEL_EVENTS.INITIALISED);
   }
@@ -105,6 +120,8 @@ class Kernel extends EventEmitter {
    * Run the application
    */
   run() {
+    console.log('Kernel Running...');
+
     // development
     if (this.server.get('mode') === 'development') {
       // use a webpack dev server with hot middleware

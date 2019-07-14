@@ -35,4 +35,8 @@ appConfig.versionDate = packageJson.versionDate;
 appConfig.versionSuffix = packageJson.version.replace(/\./g, '-');
 appConfig.author = packageJson.author;
 
+// Some additional maths that is used commonly based on configuration parameters
+appConfig.device.resolution.numLEDs = appConfig.device.resolution.width * appConfig.device.resolution.height;
+
+
 module.exports = appConfig;

@@ -1,5 +1,3 @@
-/* eslint-disable no-bitwise */
-
 /**
  * @description
  * Converts an R, G and B value to a 24bit integer value

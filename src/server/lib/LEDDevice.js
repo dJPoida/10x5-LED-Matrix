@@ -20,8 +20,6 @@ class LEDDevice extends EventEmitter {
     this._pixelData = new Uint32Array(this.numLEDs);
 
     this.bindEvents();
-
-    this.initialise();
   }
 
   /**
@@ -57,7 +55,7 @@ class LEDDevice extends EventEmitter {
   /**
    * @type {number}
    */
-  get numLEDs() { return this.config.device.resolution.width * this.config.device.resolution.height; }
+  get numLEDs() { return this.config.device.resolution.numLEDs; }
 
 
   /**
@@ -93,8 +91,6 @@ class LEDDevice extends EventEmitter {
   /**
    * @description
    * Initialise the LED Device
-   *
-   * @returns {Promise}
    */
   async initialise() {
     console.log('LED Device initialising...');
@@ -142,6 +138,10 @@ class LEDDevice extends EventEmitter {
    * Re-draws the frame based on the current display buffer
    */
   updateFrame() {
+    // @TODO: create some kind of mutex to prevent these variables from being accessed at the same time
+    this._pixelData = [...this.kernel.layerBlender.pixelData];
+
+    this.device.render(this.pixelData);
     this.emit(LED_DEVICE_EVENTS.FRAME_UPDATE);
   }
 }
