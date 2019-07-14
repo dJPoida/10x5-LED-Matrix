@@ -81,15 +81,17 @@ class LayerBlender extends EventEmitter {
     console.log('Layer Blender initialising...');
 
     // Add a background layer
-    const background = new Layer();
+    const background = new Layer(this.width, this.height);
 
     // @TODO: remove these debug lines which place 4x pixels in the top left
     background.setPixel(0, 0, argb2int(255, 255, 0, 0));
-    background.setPixel(this.width, 0, argb2int(255, 0, 255, 0));
-    background.setPixel(this.width, this.height, argb2int(255, 0, 0, 255));
-    background.setPixel(0, this.height, argb2int(255, 255, 255, 255));
+    background.setPixel(this.width - 1, 0, argb2int(255, 0, 255, 0));
+    background.setPixel(this.width - 1, this.height - 1, argb2int(255, 0, 0, 255));
+    background.setPixel(0, this.height - 1, argb2int(255, 255, 255, 255));
 
     this.layers.push(background);
+
+    // TODO: bind listeners to the layers and update pixel data when they change
 
     // Let everyone know that the Layer Blender is initialised
     this.emit(LAYER_BLENDER_EVENTS.INITIALISED);
@@ -101,6 +103,7 @@ class LayerBlender extends EventEmitter {
    * Fired when the Layer Blender is initialised
    */
   handleInitialised() {
+    this._updatePixelData();
     console.log('Layer Blender Initialised.');
   }
 
@@ -112,18 +115,21 @@ class LayerBlender extends EventEmitter {
    * @returns {Uint32Array}
    */
   _updatePixelData() {
-    const returnPixelData = new Uint32Array(this.numLEDs);
+    const newPixelData = new Uint32Array(this.numLEDs);
 
     // TODO: this could be made more efficient by only returning the background layer if there is only a single layer in the layers array
 
     // Iterate over each of the layers and blend their pixel data down into the return pixel data
     this.layers.forEach((layer) => {
       for (let p = 0; p < this.numLEDs; p += 1) {
-        returnPixelData[p] &= layer.pixelData[p];
+        newPixelData[p] = layer.pixelData[p];
+        // TODO: blending is not working yet
+        // newPixelData[p] = newPixelData[p] & layer.pixelData[p];
       }
     });
 
-    return returnPixelData;
+    // TODO: maybe need some kind of mutex to prevent this from being written at an inopportune time
+    this._pixelData = newPixelData;
   }
 }
 

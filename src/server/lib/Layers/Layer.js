@@ -3,9 +3,10 @@
  */
 const Layer = class {
   constructor(width, height) {
+    console.log(`New layer (${width}, ${height})`);
     this._width = width;
     this._height = height;
-    this._pixelData = new Uint32Array(this.numLEDs);
+    this._pixelData = new Uint32Array(width * height);
   }
 
 
