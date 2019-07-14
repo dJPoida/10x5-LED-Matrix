@@ -141,7 +141,10 @@ class LEDDevice extends EventEmitter {
     // @TODO: create some kind of mutex to prevent these variables from being accessed at the same time
     this._pixelData = [...this.kernel.layerBlender.pixelData];
 
-    console.log(this._pixelData);
+    // console.log(this._pixelData);
+
+    const testPixelData = new Uint32Array();
+    testPixelData[0] = 0xffffff;
 
     this.device.render(this.pixelData);
     this.emit(LED_DEVICE_EVENTS.FRAME_UPDATE);
