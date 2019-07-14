@@ -100,11 +100,11 @@ class LEDDevice extends EventEmitter {
 
     // Initialise the Index Map
     if (Array.isArray(this.kernel.config.pixelIndexMap)) {
-      this.device.setIndexMapping(this.kernel.config.pixelIndexMap);
+      // this.device.setIndexMapping(this.kernel.config.pixelIndexMap);
     }
 
     // Set the Brightness
-    this.device.setBrightness(this.brightness);
+    // this.device.setBrightness(this.brightness);
 
     // Initialise the frame update timer
     this._frameUpdateInterval = setInterval(this.updateFrame.bind(this), 1000 / this.kernel.config.fps);
@@ -145,8 +145,10 @@ class LEDDevice extends EventEmitter {
 
     console.log('NUM LEDS', this.numLEDs);
 
-    const testPixelData = new Uint32Array(this.numLEDs);
-    testPixelData[0] = 0xffffff;
+    const testPixelData = new Uint32Array(50); // this.numLEDs);
+    for (let i = 0; i < 50; i += 1) {
+      testPixelData[i] = 0xffffff;
+    }
 
     this.device.render(testPixelData);
     // this.device.render(this.pixelData);
