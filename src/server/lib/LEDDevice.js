@@ -146,7 +146,8 @@ class LEDDevice extends EventEmitter {
     const testPixelData = new Uint32Array();
     testPixelData[0] = 0xffffff;
 
-    this.device.render(this.pixelData);
+    this.device.render(testPixelData);
+    // this.device.render(this.pixelData);
     this.emit(LED_DEVICE_EVENTS.FRAME_UPDATE);
   }
 }
