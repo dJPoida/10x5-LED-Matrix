@@ -143,7 +143,9 @@ class LEDDevice extends EventEmitter {
 
     // console.log(this._pixelData);
 
-    const testPixelData = new Uint32Array();
+    console.log('NUM LEDS', this.numLEDs);
+
+    const testPixelData = new Uint32Array(this.numLEDs);
     testPixelData[0] = 0xffffff;
 
     this.device.render(testPixelData);
