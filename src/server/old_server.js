@@ -35,6 +35,8 @@ setInterval(() => {
   }
   offset = (offset + 1) % 256;
 
+  pixelData[0] = 0xffffff;
+
   ws281x.render(pixelData);
 }, 1000 / 60);
 
