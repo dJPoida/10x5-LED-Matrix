@@ -13,8 +13,8 @@ class LEDDevice extends EventEmitter {
   constructor(kernel) {
     super();
     this._kernel = kernel;
-    this._fps = kernel.config.device.fps;
-    this._brightness = kernel.config.device.defaultBrightness;
+    this._fps = kernel.config.device.fps || 60;
+    this._brightness = kernel.config.device.defaultBrightness || 192;
     this._device = ws281x;
     this._frameUpdateInterval = undefined;
     this._pixelData = new Uint32Array(this.numLEDs);
@@ -140,6 +140,8 @@ class LEDDevice extends EventEmitter {
   updateFrame() {
     // @TODO: create some kind of mutex to prevent these variables from being accessed at the same time
     this._pixelData = [...this.kernel.layerBlender.pixelData];
+
+    console.log(this.pixelData);
 
     this.device.render(this.pixelData);
     this.emit(LED_DEVICE_EVENTS.FRAME_UPDATE);
