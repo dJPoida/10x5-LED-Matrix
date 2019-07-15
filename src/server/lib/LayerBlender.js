@@ -2,6 +2,7 @@ const EventEmitter = require('events');
 
 const Layer = require('./Layers/Layer');
 const argb2int = require('../../lib/helpers/argb2int');
+const argbBlend = require('../../lib/helpers/argbBlend');
 
 const LAYER_BLENDER_EVENTS = require('./constants/LayerBlenderEvents');
 
@@ -122,9 +123,9 @@ class LayerBlender extends EventEmitter {
     // Iterate over each of the layers and blend their pixel data down into the return pixel data
     this.layers.forEach((layer) => {
       for (let p = 0; p < this.numLEDs; p += 1) {
-        newPixelData[p] = layer.pixelData[p];
+        // newPixelData[p] = layer.pixelData[p];
         // TODO: blending is not working yet
-        // newPixelData[p] = newPixelData[p] & layer.pixelData[p];
+        newPixelData[p] = argbBlend(newPixelData[p], layer.pixelData[p]);
       }
     });
 
