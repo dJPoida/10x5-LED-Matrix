@@ -1,5 +1,5 @@
 const int2argb = require('./int2argb');
-const argb2int = require('./argb2int');
+const argb2int = require('./int2argb');
 
 /**
  * @description
@@ -17,10 +17,15 @@ const argbBlend = (baseColor, addedColor) => {
     a: 0x00, r: 0x00, g: 0x00, b: 0x00,
   };
 
-  result.a = 1 - (1 - added.a) * (1 - base.a);
+  base.a /= 255;
+  added.a /= 255;
+
+  result.a = 1 - (1 - (added.a)) * (1 - base.a);
   result.r = Math.round((added.r * added.a / result.a) + (base.r * base.a * (1 - added.a) / result.a)); // red
   result.g = Math.round((added.g * added.a / result.a) + (base.g * base.a * (1 - added.a) / result.a)); // green
   result.b = Math.round((added.b * added.a / result.a) + (base.b * base.a * (1 - added.a) / result.a)); // blue
+
+  result.a *= 255;
 
   return argb2int(result.a, result.r, result.g, result.b);
 };
