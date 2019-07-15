@@ -84,7 +84,12 @@ class LayerBlender extends EventEmitter {
     // Add a background layer
     const background = new Layer(this.width, this.height);
 
-    // @TODO: remove these debug lines which place 4x pixels in the top left
+    // @TODO: improve this to use an iterator from the layer
+    for (let y = 0; y < this.height; y += 1) {
+      for (let x = 0; x < this.width; x += 1) {
+        background.setPixel(x, y, argb2int(255, 0, 0, 0));
+      }
+    }
     background.setPixel(0, 0, argb2int(255, 255, 0, 0));
     background.setPixel(this.width - 1, 0, argb2int(255, 0, 255, 0));
     background.setPixel(this.width - 1, this.height - 1, argb2int(255, 0, 0, 255));
@@ -98,6 +103,10 @@ class LayerBlender extends EventEmitter {
         foreground.setPixel(x, y, argb2int(127, 255, 255, 255));
       }
     }
+    background.setPixel(1, 1, argb2int(128, 255, 0, 0));
+    background.setPixel(this.width - 2, 1, argb2int(128, 0, 255, 0));
+    background.setPixel(this.width - 2, this.height - 2, argb2int(128, 0, 0, 255));
+    background.setPixel(1, this.height - 2, argb2int(128, 255, 255, 255));
 
     this.layers.push(foreground);
 
