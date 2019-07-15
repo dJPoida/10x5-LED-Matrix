@@ -119,10 +119,7 @@ class LayerBlender extends EventEmitter {
       }
     }
 
-    // this.layers.push(testLayer2);
-
-    console.log(testLayer1);
-    console.log(testLayer2);
+    this.layers.push(testLayer2);
 
     // TODO: bind listeners to the layers and update pixel data when they change
 
