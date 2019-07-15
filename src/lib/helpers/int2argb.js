@@ -9,10 +9,10 @@
  * @returns {{a: alpha, r: number, g: number, b: number}}
  */
 const int2argb = pixelValue => ({
-  a: (pixelValue >> 24 & 0xFF),
-  r: (pixelValue >> 16 & 0xFF),
-  g: (pixelValue >> 8 & 0xFF),
-  b: (pixelValue & 0xFF),
+  a: (pixelValue >>> 24),
+  r: ((pixelValue & 0x00FF0000) >> 16),
+  g: ((pixelValue & 0x0000FF00) >> 8),
+  b: (pixelValue & 0x000000FF),
 });
 
 module.exports = int2argb;
