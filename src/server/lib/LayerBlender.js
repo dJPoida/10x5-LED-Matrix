@@ -138,6 +138,9 @@ class LayerBlender extends EventEmitter {
       }
     });
 
+    // TODO: final pixelData needs to have alpha removed by blending with a non alpha (0, 0, 0) rgb background.
+    // TODO: OR cheat by ensuring the alpha value of the background layer is always (255, 0, 0, 0);
+
     // TODO: maybe need some kind of mutex to prevent this from being written at an inopportune time
     this._pixelData = newPixelData;
   }

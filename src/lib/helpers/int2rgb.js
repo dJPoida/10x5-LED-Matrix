@@ -8,10 +8,10 @@
  *
  * @returns {{r: number, g: number, b: number}}
  */
-const Int2rgb = pixelValue => ({
+const int2rgb = pixelValue => ({
   r: (pixelValue >> 16 & 0xFF),
   g: (pixelValue >> 8 & 0xFF),
   b: (pixelValue & 0xFF),
 });
 
-module.exports = Int2rgb;
+module.exports = int2rgb;
