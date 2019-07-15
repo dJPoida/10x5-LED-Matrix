@@ -60,7 +60,8 @@
     "homepage": "https://github.com/dJPoida/LED-Matrix",
     "scripts": {
         "start": "sudo nodemon src/server/server.js ",
-        "dev": "export NODE_ENV=development || SET \"NODE_ENV=development\" && nodemon --watch \"src/server/\" src/server/server.js ",
+        "dev": "export NODE_ENV=development || SET \"NODE_ENV=development\" && sudo nodemon --watch \"src/server/\" src/server/server.js ",
+        "debug": "export NODE_ENV=development || SET \"NODE_ENV=development\" && sudo nodemon --watch \"src/server/\" --inspect-brk=0.0.0.0:9229 src/server/server.js ",
         "build": "webpack --mode development --env.patch",
         "deploy": "webpack --mode production"
     },
