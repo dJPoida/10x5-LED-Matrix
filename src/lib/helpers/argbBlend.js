@@ -1,5 +1,5 @@
 const int2argb = require('./int2argb');
-const argb2int = require('./int2argb');
+const argb2int = require('./argb2int');
 
 /**
  * @description
@@ -16,7 +16,6 @@ const argbBlend = (baseColor, addedColor) => {
   const result = {
     a: 0x00, r: 0x00, g: 0x00, b: 0x00,
   };
-  return added;
 
   base.a /= 255;
   added.a /= 255;
@@ -27,8 +26,6 @@ const argbBlend = (baseColor, addedColor) => {
   result.b = Math.round((added.b * added.a / result.a) + (base.b * base.a * (1 - added.a) / result.a)); // blue
 
   result.a *= 255;
-  base.a *= 255;
-  added.a *= 255;
 
   return argb2int(result.a, result.r, result.g, result.b);
 };

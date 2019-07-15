@@ -7,6 +7,6 @@
  * @param {number} g a green value between 0 and 255
  * @param {number} b a blue value between 0 and 255
  */
-const argb2int = (a, r, g, b) => (((a * (2 ** 24)) & 0xff) << 24) + ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
+const argb2int = (a, r, g, b) => (a * (2 ** 24)) + ((r & 0xFF) << 16) + ((g & 0xFF) << 8) + (b & 0xFF);
 
 module.exports = argb2int;

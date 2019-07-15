@@ -97,10 +97,10 @@ class LayerBlender extends EventEmitter {
         this._backgroundLayer.setPixel(x, y, argb2int(255, 0, 0, 0));
       }
     }
-    
-    
+
+
     const testLayer1 = new Layer('1', this.width, this.height, 'Test Layer 1');
-    
+
     testLayer1.setPixel(0, 0, argb2int(255, 255, 0, 0));
     testLayer1.setPixel(this.width - 1, 0, argb2int(255, 0, 255, 0));
     testLayer1.setPixel(this.width - 1, this.height - 1, argb2int(255, 0, 0, 255));
@@ -119,7 +119,7 @@ class LayerBlender extends EventEmitter {
       }
     }
 
-    //this.layers.push(testLayer2);
+    // this.layers.push(testLayer2);
 
     console.log(testLayer1);
     console.log(testLayer2);
@@ -152,19 +152,15 @@ class LayerBlender extends EventEmitter {
 
     // Start with the background layer data
     const newPixelData = new Uint32Array(this.backgroundLayer.pixelData);
-    console.log(newPixelData);
-    
+
     // TODO: this could be made more efficient by only returning the background layer if there is only a single layer in the layers array
 
     // Iterate over each of the layers and blend their pixel data down into the return pixel data
     this.layers.forEach((layer) => {
       console.log(`Rendering Layer ${layer.id} (${layer.name})`);
-      console.log(layer.pixelData);
       for (let p = 0; p < this.numLEDs; p += 1) {
-        //newPixelData[p] = argbBlend(newPixelData[p], layer.pixelData[p]);
         newPixelData[p] = argbBlend(newPixelData[p], layer.pixelData[p]);
       }
-      console.log(newPixelData);
     });
 
     // TODO: final pixelData needs to have alpha removed by blending with a non alpha (0, 0, 0) rgb background.
