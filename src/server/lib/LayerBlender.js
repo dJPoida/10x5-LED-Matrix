@@ -94,7 +94,7 @@ class LayerBlender extends EventEmitter {
 
     const foreground = new Layer(this.width, this.height);
     for (let y = 0; y < this.height; y += 1) {
-      for (let x = 0; x < this.height; x += 1) {
+      for (let x = 0; x < this.width; x += 1) {
         foreground.setPixel(x, y, argb2int(127, 255, 255, 255));
       }
     }
