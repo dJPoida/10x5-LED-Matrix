@@ -92,6 +92,15 @@ class LayerBlender extends EventEmitter {
 
     this.layers.push(background);
 
+    const foreground = new Layer(this.width, this.height);
+    for (let y = 0; y < this.height; y += 1) {
+      for (let x = 0; x < this.height; x += 1) {
+        foreground.setPixel(x, y, argb2int(127, 255, 255, 255));
+      }
+    }
+
+    this.layers.push(foreground);
+
     // TODO: bind listeners to the layers and update pixel data when they change
 
     // Let everyone know that the Layer Blender is initialised
