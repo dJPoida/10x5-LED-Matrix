@@ -4,7 +4,8 @@ const EventEmitter = require('events');
 const bodyParser = require('body-parser');
 
 const LEDDevice = require('./LEDDevice');
-const LayerBlender = require('./LayerBlender');
+const Blender = require('./Blender');
+const ServerSocketHandler = require('./ServerSocketHandler');
 const Router = require('../routes/Router');
 
 const KERNEL_EVENTS = require('../../lib/constants/KernelEvents');
@@ -32,10 +33,11 @@ class Kernel extends EventEmitter {
     this._http = http;
     this._config = config;
     this._initialised = false;
-    this._ledDevice = undefined;
-    this._layerBlender = undefined;
+    this._ledDevice = new LEDDevice(this);
+    this._blender = new Blender(this);
+    this._socketHandler = new ServerSocketHandler(this);
 
-    this.bindEvents();
+    this._bindEvents();
 
     this.initialise();
   }
@@ -71,37 +73,23 @@ class Kernel extends EventEmitter {
 
 
   /**
-   * @type {layerBlender}
+   * @type {Blender}
    */
-  get layerBlender() { return this._layerBlender; }
+  get blender() { return this._blender; }
 
 
   /**
-   * @description
-   * Initialise the kernel
+   * @type {ServerSocketHandler}
    */
-  async initialise() {
-    console.log('Kernel initialising...');
-
-    // Create the LED Device Controller
-    this._ledDevice = new LEDDevice(this);
-    await this.ledDevice.initialise();
-
-    // Crete the layer blender
-    this._layerBlender = new LayerBlender(this);
-    await this.layerBlender.initialise();
-
-    this._initialised = true;
-    this.emit(KERNEL_EVENTS.INITIALISED);
-  }
+  get socketHandler() { return this._socketHandler; }
 
 
   /**
    * @description
    * Bind the event listeners this class cares about
    */
-  bindEvents() {
-    this.once(KERNEL_EVENTS.INITIALISED, this.handleInitialised.bind(this));
+  _bindEvents() {
+    this.once(KERNEL_EVENTS.INITIALISED, this._handleInitialised.bind(this));
   }
 
 
@@ -109,9 +97,32 @@ class Kernel extends EventEmitter {
    * @description
    * Fired once after the kernel has initialised
    */
-  handleInitialised() {
+  _handleInitialised() {
     console.log('Kernel Initialised.');
     this.run();
+  }
+
+
+  /**
+   * @description
+   * Initialise the kernel
+   *
+   * @TODO: Error handling
+   */
+  async initialise() {
+    console.log('Kernel initialising...');
+
+    // Initialise the LED Device Controller
+    await this.ledDevice.initialise();
+
+    // Initialise the Blender
+    await this.blender.initialise();
+
+    // Initialise the Socket Handler
+    await this.socketHandler.initialise();
+
+    this._initialised = true;
+    this.emit(KERNEL_EVENTS.INITIALISED);
   }
 
 
@@ -175,6 +186,20 @@ class Kernel extends EventEmitter {
     } catch (ex) {
       throw new Error(`Failed to begin http server on port ${this.config.server.port}: ${ex}`);
     }
+  }
+
+
+  /**
+   * @description
+   * Serialise the state of the server application for transport
+   *
+   * @returns {object}
+   */
+  serializeState() {
+    return {
+      some: 'data',
+      to: 'do',
+    };
   }
 }
 

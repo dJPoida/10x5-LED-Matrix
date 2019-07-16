@@ -4,16 +4,16 @@ const Layer = require('./Layers/Layer');
 const argb2int = require('../../lib/helpers/argb2int');
 const argbBlend = require('../../lib/helpers/argbBlend');
 
-const LAYER_BLENDER_EVENTS = require('./constants/LayerBlenderEvents');
+const BLENDER_EVENTS = require('./constants/BlenderEvents');
 
 /**
- * @class LayerBlender
+ * @class Blender
  * This class is responsible for combining all of the layers together
  *
  * for a good resource on pixel bitwise blending see
  * @see https://50linesofco.de/post/2017-02-13-bits-and-bytes-in-javascript
  */
-class LayerBlender extends EventEmitter {
+class Blender extends EventEmitter {
   /**
    * @constructor
    * @param {Kernel} kernel
@@ -26,7 +26,7 @@ class LayerBlender extends EventEmitter {
     this._backgroundLayer = undefined;
     this._pixelData = new Uint32Array(this.numLEDs);
 
-    this.bindEvents();
+    this._bindEvents();
   }
 
 
@@ -76,17 +76,51 @@ class LayerBlender extends EventEmitter {
    * @description
    * Bind the event listeners this class cares about
    */
-  bindEvents() {
-    this.once(LAYER_BLENDER_EVENTS.INITIALISED, this.handleInitialised.bind(this));
+  _bindEvents() {
+    this.once(BLENDER_EVENTS.INITIALISED, this._handleInitialised.bind(this));
   }
 
 
   /**
    * @description
-   * Initialise the Layer Blender
+   * Fired when the Layer Blender is initialised
+   */
+  _handleInitialised() {
+    this._render();
+    console.log('Layer Blender Initialised.');
+  }
+
+
+  /**
+   * @description
+   * Blend all of the layers and update the internal pixelData array
+   *
+   * @returns {Uint32Array}
+   */
+  _render() {
+    console.log('Updating Pixel Data');
+
+    // Start with the background layer data
+    const newPixelData = new Uint32Array(this.backgroundLayer.pixelData);
+
+    // Iterate over each of the layers and blend their pixel data down into the return pixel data
+    this.layers.forEach((layer) => {
+      for (let p = 0; p < this.numLEDs; p += 1) {
+        newPixelData[p] = argbBlend(newPixelData[p], layer.pixelData[p]);
+      }
+    });
+
+    // TODO: maybe need some kind of mutex to prevent this from being written at an inopportune time
+    this._pixelData = newPixelData;
+  }
+
+
+  /**
+   * @description
+   * Initialise the Blender
    */
   async initialise() {
-    console.log('Layer Blender initialising...');
+    console.log('Blender initialising...');
 
     // Add a background layer
     this._backgroundLayer = new Layer('background', this.width, this.height, 'Background');
@@ -97,7 +131,6 @@ class LayerBlender extends EventEmitter {
         this._backgroundLayer.setPixel(x, y, argb2int(255, 0, 0, 0));
       }
     }
-
 
     const testLayer1 = new Layer('1', this.width, this.height, 'Test Layer 1');
 
@@ -124,48 +157,8 @@ class LayerBlender extends EventEmitter {
     // TODO: bind listeners to the layers and update pixel data when they change
 
     // Let everyone know that the Layer Blender is initialised
-    this.emit(LAYER_BLENDER_EVENTS.INITIALISED);
-  }
-
-
-  /**
-   * @description
-   * Fired when the Layer Blender is initialised
-   */
-  handleInitialised() {
-    this._updatePixelData();
-    console.log('Layer Blender Initialised.');
-  }
-
-
-  /**
-   * @description
-   * Blend all of the layers and update the internal pixelData array
-   *
-   * @returns {Uint32Array}
-   */
-  _updatePixelData() {
-    console.log('Updating Pixel Data');
-
-    // Start with the background layer data
-    const newPixelData = new Uint32Array(this.backgroundLayer.pixelData);
-
-    // TODO: this could be made more efficient by only returning the background layer if there is only a single layer in the layers array
-
-    // Iterate over each of the layers and blend their pixel data down into the return pixel data
-    this.layers.forEach((layer) => {
-      console.log(`Rendering Layer ${layer.id} (${layer.name})`);
-      for (let p = 0; p < this.numLEDs; p += 1) {
-        newPixelData[p] = argbBlend(newPixelData[p], layer.pixelData[p]);
-      }
-    });
-
-    // TODO: final pixelData needs to have alpha removed by blending with a non alpha (0, 0, 0) rgb background.
-    // TODO: OR cheat by ensuring the alpha value of the background layer is always (255, 0, 0, 0);
-
-    // TODO: maybe need some kind of mutex to prevent this from being written at an inopportune time
-    this._pixelData = newPixelData;
+    this.emit(BLENDER_EVENTS.INITIALISED);
   }
 }
 
-module.exports = LayerBlender;
+module.exports = Blender;

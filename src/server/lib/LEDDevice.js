@@ -1,8 +1,14 @@
 const ws281x = require('rpi-ws281x-native');
 const EventEmitter = require('events');
 
-const LED_DEVICE_EVENTS = require('../../lib/constants/LEDDeviceEvents');
+const LED_DEVICE_EVENT = require('../../lib/constants/LEDDeviceEvent');
 
+/**
+ * @class LEDDevice
+ *
+ * @description
+ * This class is responsible for controlling the ws281x device
+ */
 class LEDDevice extends EventEmitter {
 
   /**
@@ -12,6 +18,7 @@ class LEDDevice extends EventEmitter {
   */
   constructor(kernel) {
     super();
+
     this._kernel = kernel;
     this._fps = kernel.config.device.fps || 60;
     this._brightness = kernel.config.device.defaultBrightness || 192;
@@ -19,7 +26,7 @@ class LEDDevice extends EventEmitter {
     this._frameUpdateInterval = undefined;
     this._pixelData = new Uint32Array(this.numLEDs);
 
-    this.bindEvents();
+    this._bindEvents();
   }
 
   /**
@@ -77,14 +84,40 @@ class LEDDevice extends EventEmitter {
 
 
   /**
+   * @type {boolean}
+   * @description returns true if the raspberry pi could be initialised with the ws281x library
+   */
+  get hardwareAvailable() { return this.device && !this.device.isStub(); }
+
+
+  /**
    * @description
    * Bind the event listeners this class cares about
    */
-  bindEvents() {
-    this.once(LED_DEVICE_EVENTS.INITIALISED, this.handleInitialised.bind(this));
+  _bindEvents() {
+    this.once(LED_DEVICE_EVENT.INITIALISED, this._handleInitialised.bind(this));
 
     // trap the SIGINT and reset before exit
-    process.on('SIGINT', this.handleApplicationTerminate.bind(this));
+    process.on('SIGINT', this._handleApplicationTerminate.bind(this));
+  }
+
+
+  /**
+   * @description
+   * Fired when the LED Device is initialised
+   */
+  _handleInitialised() {
+    console.log('LED Device Initialised.');
+  }
+
+
+  /**
+   * @description
+   * Fired by the application JUST before process termination
+   */
+  _handleApplicationTerminate() {
+    this.device.reset();
+    process.nextTick(() => { process.exit(0); });
   }
 
 
@@ -110,26 +143,7 @@ class LEDDevice extends EventEmitter {
     this._frameUpdateInterval = setInterval(this.updateFrame.bind(this), 1000 / this.kernel.config.fps);
 
     // Let everyone know that the LED Device is initialised
-    this.emit(LED_DEVICE_EVENTS.INITIALISED);
-  }
-
-
-  /**
-   * @description
-   * Fired when the LED Device is initialised
-   */
-  handleInitialised() {
-    console.log('LED Device Initialised.');
-  }
-
-
-  /**
-   * @description
-   * Fired by the application JUST before process termination
-   */
-  handleApplicationTerminate() {
-    this.device.reset();
-    process.nextTick(() => { process.exit(0); });
+    this.emit(LED_DEVICE_EVENT.INITIALISED);
   }
 
 
@@ -139,10 +153,10 @@ class LEDDevice extends EventEmitter {
    */
   updateFrame() {
     // @TODO: create some kind of mutex to prevent these variables from being accessed at the same time
-    this._pixelData = [...this.kernel.layerBlender.pixelData];
+    this._pixelData = [...this.kernel.blender.pixelData];
 
     this.device.render(this.pixelData);
-    this.emit(LED_DEVICE_EVENTS.FRAME_UPDATE);
+    this.emit(LED_DEVICE_EVENT.FRAME_UPDATE, { pixelData: this.pixelData });
   }
 }
 
