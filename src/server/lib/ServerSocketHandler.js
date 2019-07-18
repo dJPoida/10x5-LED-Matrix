@@ -4,6 +4,7 @@ const socketIo = require('socket.io');
 const SERVER_SOCKET_HANDLER_EVENTS = require('./constants/ServerSocketHandlerEvents');
 const SERVER_SOCKET_MESSAGE = require('../../lib/constants/ServerSocketMessage');
 const CLIENT_SOCKET_MESSAGE = require('../../lib/constants/ClientSocketMessage');
+const CLIENT_ROLE = require('../../lib/constants/ClientRole');
 
 /**
  * @class ServerSocketHandler
@@ -82,11 +83,53 @@ class ServerSocketHandler extends EventEmitter
    * @returns {void}
    */
   _handleSocketConnected(socket) {
+    console.log('Socket Connected. Awaiting identification...');
+
+    // Create a temporary handler for this socket until they identify who / what they are
+    socket.on('disconnect', this._handleSocketDisconnected.bind(this));
+    socket.once('ID', clientRole => this._handleSocketIdentityReceived(socket, clientRole));
+
+    // Emit an identity request
+    socket.emit('ID');
+
+    // Setup a timeout to terminate the connection if we don't hear from them in 3 seconds.
+    socket.identityTimeout = setTimeout(() => {
+      console.log('Socket Identity not verified. Booting.');
+      clearTimeout(socket.identityTimeout);
+      socket.emit('MSG', 'No identity provided in the allotted time. Goodbye.');
+      socket.disconnect();
+    }, 3000);
+  }
+
+
+  /**
+   * @description
+   * Fired when an incoming socket attempts to identify itself.
+   *
+   * @param {CLIENT_ROLE} clientRole
+   */
+  _handleSocketIdentityReceived(socket, clientRole) {
+    // Clear the identity timeout on the socket
+    clearTimeout(socket.identityTimeout);
+
+    // TODO: at some point in the future add some auth here
+
+    // Ensure the role is valid
+    if (!Object.values(CLIENT_ROLE).includes(clientRole)) {
+      console.log(`Invalid client role "${clientRole}" provided. Booting.`);
+      socket.emit('MSG', 'Invalid client role provided. Goodbye.');
+      socket.disconnect();
+    }
+
+    console.log(`Socket Identified as "${clientRole}".`, { connectedClients: this.connectedClients });
+    socket.clientRole = clientRole;
+
+    // TODO: subscribe the socket to the appropriate rooms / channels
+
+    // Keep track of the connected client
     this._connectedClients += 1;
 
-    console.log('Socket Connected', { connectedClients: this.connectedClients });
-
-    socket.on('disconnect', this._handleSocketDisconnected.bind(this));
+    // If everything else checks out - setup the rest of the socket handler stuff
     socket.on('MSG', this._handleClientMessageReceived.bind(this));
 
     // Notify any listeners of this class that a client has connected

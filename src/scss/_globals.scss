@@ -1,3 +1,5 @@
+@import '../vendor/mini-dark';
+
 // Default SCSS color variables to be applied to css variables
 $color_blue: #374F66;
 $color_red: #FF5959;
@@ -19,4 +21,8 @@ $color_white: #fff;
 body {
   // Speeds
   --animation-speed: 0.25s; // There is a corresponding value in the `appConstants.js`
+
+  // Colors
+  --color-emulator-frame: #{lighten($color-black, 20%)};
+  --color-emulator-pixel-base: rgba(255, 255, 255, 0.4); // Emulates the white paper layer over the leds
 }

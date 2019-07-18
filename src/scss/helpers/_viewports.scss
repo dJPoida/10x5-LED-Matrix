@@ -1,0 +1,25 @@
+// Viewports
+
+// These viewport variables match the mini.css viewports
+$viewport_xs_min: 0;
+$viewport_xs_max: 511px;
+$viewport_sm_min: 512px;
+$viewport_sm_max: 639px;
+$viewport_md_min: 640px;
+$viewport_md_max: 779px;
+$viewport_lg_min: 780px;
+$viewport_lg_max: 1280px;
+
+// Mini CSS Overrides will be compiled in to the mini-css scss
+$grid-medium-breakpoint: #{$viewport_md_min};
+$mobile-breakpoint: #{$viewport_md_min};
+$hidden-medium-breakpoint: #{$viewport_md_min};
+$visually-hidden-medium-breakpoint: #{$viewport_md_min};
+$responsive-padding-medium-breakpoint: #{$viewport_md_min};
+$responsive-margin-medium-breakpoint: #{$viewport_md_min};
+$button-group-mobile-breakpoint: #{$viewport_md_min};
+$grid-large-breakpoint: #{$viewport_lg_min};
+$hidden-large-breakpoint: #{$viewport_lg_min};
+$visually-hidden-large-breakpoint: #{$viewport_lg_min};
+$responsive-padding-large-breakpoint: #{$viewport_lg_min};
+$responsive-margin-large-breakpoint: #{$viewport_lg_min};

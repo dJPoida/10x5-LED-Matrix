@@ -1,0 +1,49 @@
+.emulated-led-matrix {
+  width: 90%;
+  height: 90%;
+  padding: 5%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .device-wrapper {
+    display: block;
+    position: relative;
+    width: 100%;
+
+    .device {
+      background-color: red;
+      border: 0.5em solid var(--color-emulator-frame);
+      border-radius: 1em;
+      display: block;
+      position: relative;
+  
+      .row {
+        position: relative;
+        display: flex;
+    
+        .pixel-wrapper {
+          flex: 1;
+  
+          .pixel {
+            padding-top: 100%;
+            background-color: black;
+            position: relative;
+
+            &:after {
+              content: "";
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              background-color: var(--color-emulator-pixel-base);
+              border: 0.2em solid var(--color-emulator-frame);
+            }
+          }
+        }
+      }
+    }
+  }
+}
