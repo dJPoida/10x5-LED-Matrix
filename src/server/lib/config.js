@@ -24,7 +24,6 @@ updateObject(appConfig, localConfig);
 // (effectively updating it to make it current)
 fs.writeFileSync(localConfigPath, JSON.stringify(appConfig, null, 2), 'utf8');
 
-
 // ==========================================================================
 // Add additional properties to the app config for use in the application
 // (but not storage in the local config on the file system)

@@ -132,9 +132,9 @@ class LEDDevice extends EventEmitter {
     this.device.init(this.numLEDs);
 
     // Initialise the Index Map
-    if (Array.isArray(this.kernel.config.pixelIndexMap)) {
-      console.log('Applying custom pixel mapping');
-      this.device.setIndexMapping(this.kernel.config.pixelIndexMap);
+    if (Array.isArray(this.kernel.config.device.pixelIndexMap)) {
+      console.log('Applying custom pixel index mapping');
+      this.device.setIndexMapping(this.kernel.config.device.pixelIndexMap);
     }
 
     // Set the Brightness
