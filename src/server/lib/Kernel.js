@@ -9,6 +9,7 @@ const ServerSocketHandler = require('./ServerSocketHandler');
 const Router = require('../routes/Router');
 
 const KERNEL_EVENTS = require('../../lib/constants/KernelEvents');
+const SERVER_SOCKET_MESSAGE = require('../../lib/constants/ServerSocketMessage');
 
 const distPath = path.resolve(__dirname, '../../../dist');
 const clientPath = path.resolve(distPath, 'client');
@@ -36,6 +37,7 @@ class Kernel extends EventEmitter {
     this._ledDevice = new LEDDevice(this);
     this._blender = new Blender(this);
     this._socketHandler = new ServerSocketHandler(this);
+    this._updatingFrame = false;
 
     this._bindEvents();
 
@@ -185,6 +187,38 @@ class Kernel extends EventEmitter {
       });
     } catch (ex) {
       throw new Error(`Failed to begin http server on port ${this.config.server.port}: ${ex}`);
+    }
+
+    // Start the Frame Update Interval
+    this._frameUpdateInterval = setInterval(() => {
+      try {
+        this.updateFrame();
+      } catch (ex) {
+        console.error(ex);
+      }
+    }, 1000 / this.config.fps);
+  }
+
+
+  /**
+   * @description
+   * Re-draws the frame based on the current display buffer
+   */
+  async updateFrame() {
+    if (this.updatingFrame) {
+      console.warn('skipped frame');
+      return;
+    }
+    this._updatingFrame = true;
+    try {
+    // Get the pixel data from the blender (on its own terms)
+      const pixelData = await this.blender.getPixelData();
+
+      this.ledDevice.updatePixelData(pixelData);
+      this.emit(KERNEL_EVENTS.FRAME_UPDATE, { pixelData });
+      this.socketHandler.sendMessageToClients(SERVER_SOCKET_MESSAGE.EMULATOR_FRAME, { pixelData: Object.values(pixelData) });
+    } finally {
+      this._updatingFrame = false;
     }
   }
 

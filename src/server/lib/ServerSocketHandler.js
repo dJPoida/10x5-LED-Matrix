@@ -2,6 +2,7 @@ const EventEmitter = require('events');
 const socketIo = require('socket.io');
 
 const SERVER_SOCKET_HANDLER_EVENTS = require('./constants/ServerSocketHandlerEvents');
+const SOCKET_ROOMS = require('./constants/SocketRooms');
 const SERVER_SOCKET_MESSAGE = require('../../lib/constants/ServerSocketMessage');
 const CLIENT_SOCKET_MESSAGE = require('../../lib/constants/ClientSocketMessage');
 const CLIENT_ROLE = require('../../lib/constants/ClientRole');
@@ -85,8 +86,11 @@ class ServerSocketHandler extends EventEmitter
   _handleSocketConnected(socket) {
     console.log('Socket Connected. Awaiting identification...');
 
+    // Start by flagging the socket as an unknown
+    socket.clientRole = CLIENT_ROLE.UNIDENTIFIED;
+
     // Create a temporary handler for this socket until they identify who / what they are
-    socket.on('disconnect', this._handleSocketDisconnected.bind(this));
+    socket.on('disconnect', reason => this._handleSocketDisconnected(socket, reason));
     socket.once('ID', clientRole => this._handleSocketIdentityReceived(socket, clientRole));
 
     // Emit an identity request
@@ -106,6 +110,7 @@ class ServerSocketHandler extends EventEmitter
    * @description
    * Fired when an incoming socket attempts to identify itself.
    *
+   * @param {Socket} socket
    * @param {CLIENT_ROLE} clientRole
    */
   _handleSocketIdentityReceived(socket, clientRole) {
@@ -119,15 +124,23 @@ class ServerSocketHandler extends EventEmitter
       console.log(`Invalid client role "${clientRole}" provided. Booting.`);
       socket.emit('MSG', 'Invalid client role provided. Goodbye.');
       socket.disconnect();
+      return;
     }
+
+    // Keep track of the connected client
+    this._connectedClients += 1;
 
     console.log(`Socket Identified as "${clientRole}".`, { connectedClients: this.connectedClients });
     socket.clientRole = clientRole;
 
-    // TODO: subscribe the socket to the appropriate rooms / channels
-
-    // Keep track of the connected client
-    this._connectedClients += 1;
+    // Join the socket to the appropriate rooms
+    socket.join(SOCKET_ROOMS.GLOBAL);
+    if (socket.clientRole === CLIENT_ROLE.EMULATOR) {
+      socket.join(SOCKET_ROOMS.EMULATOR);
+    }
+    if (socket.clientRole === CLIENT_ROLE.MAIN) {
+      socket.join(SOCKET_ROOMS.MAIN);
+    }
 
     // If everything else checks out - setup the rest of the socket handler stuff
     socket.on('MSG', this._handleClientMessageReceived.bind(this));
@@ -137,7 +150,7 @@ class ServerSocketHandler extends EventEmitter
 
     // Send an initial server state to the client
     setTimeout(() => {
-      this.sendMessageToClients(SERVER_SOCKET_MESSAGE.INITIALISE, this.serverState, socket);
+      this.sendMessageToClients(SERVER_SOCKET_MESSAGE.INITIALISE, this.serverState, null, socket);
     }, 0);
   }
 
@@ -146,12 +159,19 @@ class ServerSocketHandler extends EventEmitter
    * @description
    * Fired when a client socket is disconnected
    *
+   * @param {Socket} socket the socket that was disconnected
+   * @param {string} disconnectReason the reason for disconnection
+   *
    * @returns {void}
    */
-  _handleSocketDisconnected(...params) {
-    this._connectedClients -= 1;
+  _handleSocketDisconnected(socket, disconnectReason) {
+    if (socket.clientRole !== CLIENT_ROLE.UNIDENTIFIED) {
+      this._connectedClients -= 1;
+      console.log(`Client disconnected: "${disconnectReason}"`, { connectedClients: this.connectedClients });
+    } else {
+      console.log('Unidentified client disconnected');
+    }
 
-    console.log('Client disconnected', { ...params });
 
     // Notify any listeners of this class that a socket has disconnected
     this.emit(SERVER_SOCKET_HANDLER_EVENTS.CLIENT_DISCONNECTED, { connectedClients: this.connectedClients });
@@ -199,14 +219,29 @@ class ServerSocketHandler extends EventEmitter
    *
    * @param {string} message
    * @param {object} payload
+   * @param {string | string[]} [rooms=[]]
    * @param {object} [socket=undefined]
    */
-  sendMessageToClients(message, payload, socket) {
+  sendMessageToClients(message, payload, rooms = [], socket) {
     const self = this;
-    if (typeof (socket) === 'undefined') {
-      self.io.emit('MSG', message, payload);
-    } else {
+
+    if (typeof rooms === 'string') {
+      rooms = [rooms];
+    }
+
+    // Emit to a specific socket
+    if (typeof (socket) !== 'undefined') {
       socket.emit('MSG', message, payload);
+    }
+
+    // Emit to one or more rooms
+    else if (Array.isArray(rooms) && (rooms.length > 0)) {
+      rooms.forEach(room => socket.to(room).emit(message, payload));
+    }
+
+    // Emit to everyone
+    else {
+      self.io.emit('MSG', message, payload);
     }
   }
 }

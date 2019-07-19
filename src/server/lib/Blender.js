@@ -3,6 +3,7 @@ const EventEmitter = require('events');
 const Layer = require('./Layers/Layer');
 const argb2int = require('../../lib/helpers/argb2int');
 const argbBlend = require('../../lib/helpers/argbBlend');
+const stripAlpha = require('../../lib/helpers/stripAlpha');
 
 const BLENDER_EVENTS = require('./constants/BlenderEvents');
 
@@ -25,51 +26,93 @@ class Blender extends EventEmitter {
     this._layers = [];
     this._backgroundLayer = undefined;
     this._pixelData = new Uint32Array(this.numLEDs);
+    this._updating = false;
 
     this._bindEvents();
   }
 
 
   /**
+   * @description
+   * A reference to the kernel
+   *
    * @type {Kernel} kernel
    */
   get kernel() { return this._kernel; }
 
 
   /**
+   * @description
+   * The LED matrix layers
+   *
    * @type {Layer[]} layers
    */
   get layers() { return this._layers; }
 
 
   /**
+   * @description
+   * The height of the LED matrix
+   *
    * @type {number}
    */
   get width() { return this.kernel.config.device.resolution.width; }
 
 
   /**
+   * @description
+   * The width of the LED matrix
+   *
    * @type {number}
    */
   get height() { return this.kernel.config.device.resolution.height; }
 
 
   /**
+   * @description
+   * The number of leds. Pretty much just width x height.
+   *
    * @type {number}
    */
   get numLEDs() { return this.kernel.config.device.resolution.numLEDs; }
 
 
   /**
-   * @type {Uint32Array}
-   */
-  get pixelData() { return this._pixelData; }
-
-
-  /**
+   * @description
+   * The base pixel data of the background layer
+   *
    * @type {Layer}
    */
   get backgroundLayer() { return this._backgroundLayer; }
+
+
+  /**
+   * @description
+   * Returns true if the pixel data is in the middle of an update
+   *
+   * @type {boolean}
+   */
+  get updating() { return this._updating; }
+
+
+  /**
+   * @description
+   * Gets the pixel data without conflicting with a frame update
+   */
+  async getPixelData() {
+    return new Promise((resolve) => {
+      const waitForNotUpdating = () => {
+        // Don't resolve the pixel data if the frame is being updated
+        if (!this.updating) {
+          resolve(this._pixelData);
+        } else {
+          setTimeout(() => { waitForNotUpdating(); }, 0);
+        }
+      };
+
+      waitForNotUpdating();
+    });
+  }
 
 
   /**
@@ -94,24 +137,39 @@ class Blender extends EventEmitter {
   /**
    * @description
    * Blend all of the layers and update the internal pixelData array
-   *
-   * @returns {Uint32Array}
    */
   _render() {
-    console.log('Updating Pixel Data');
+    if (this.updating) {
+      console.warn('Skipped render: already updating pixel data.');
+      return;
+    }
 
-    // Start with the background layer data
-    const newPixelData = new Uint32Array(this.backgroundLayer.pixelData);
+    // TODO: log and broadcast the time taken to blend so we can avoid over complicated renders
 
-    // Iterate over each of the layers and blend their pixel data down into the return pixel data
-    this.layers.forEach((layer) => {
+    // Prevent anyone from accessing the pixel data while we're updating it
+    this._updating = true;
+    try {
+      console.log('Updating Pixel Data');
+
+      // Start with the background layer data
+      const newPixelData = new Uint32Array(this.backgroundLayer.pixelData);
+
+      // Iterate over each of the layers and blend their pixel data down into the return pixel data
+      this.layers.forEach((layer) => {
+        for (let p = 0; p < this.numLEDs; p += 1) {
+          newPixelData[p] = argbBlend(newPixelData[p], layer.pixelData[p]);
+        }
+      });
+
+      // Remove the alpha from the final pixel data (turning a 32bit integer into a 24 bit integer)
       for (let p = 0; p < this.numLEDs; p += 1) {
-        newPixelData[p] = argbBlend(newPixelData[p], layer.pixelData[p]);
+        newPixelData[p] = stripAlpha(newPixelData[p]);
       }
-    });
 
-    // TODO: maybe need some kind of mutex to prevent this from being written at an inopportune time
-    this._pixelData = newPixelData;
+      this._pixelData = newPixelData;
+    } finally {
+      this._updating = false;
+    }
   }
 
 
@@ -152,7 +210,7 @@ class Blender extends EventEmitter {
       }
     }
 
-    this.layers.push(testLayer2);
+    // this.layers.push(testLayer2);
 
     // TODO: bind listeners to the layers and update pixel data when they change
 

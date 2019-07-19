@@ -133,14 +133,11 @@ class LEDDevice extends EventEmitter {
 
     // Initialise the Index Map
     if (Array.isArray(this.kernel.config.pixelIndexMap)) {
-      // this.device.setIndexMapping(this.kernel.config.pixelIndexMap);
+      this.device.setIndexMapping(this.kernel.config.pixelIndexMap);
     }
 
     // Set the Brightness
-    // this.device.setBrightness(this.brightness);
-
-    // Initialise the frame update timer
-    this._frameUpdateInterval = setInterval(this.updateFrame.bind(this), 1000 / this.kernel.config.fps);
+    this.device.setBrightness(this.brightness);
 
     // Let everyone know that the LED Device is initialised
     this.emit(LED_DEVICE_EVENT.INITIALISED);
@@ -151,12 +148,9 @@ class LEDDevice extends EventEmitter {
    * @description
    * Re-draws the frame based on the current display buffer
    */
-  updateFrame() {
-    // @TODO: create some kind of mutex to prevent these variables from being accessed at the same time
-    this._pixelData = [...this.kernel.blender.pixelData];
-
+  updatePixelData(pixelData) {
+    this._pixelData = [...pixelData];
     this.device.render(this.pixelData);
-    this.emit(LED_DEVICE_EVENT.FRAME_UPDATE, { pixelData: this.pixelData });
   }
 }
 

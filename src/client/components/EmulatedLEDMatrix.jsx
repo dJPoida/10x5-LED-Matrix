@@ -1,6 +1,7 @@
 import React from 'react';
 
 import clientSocketHandler from '../lib/ClientSocketHandler';
+import int2rgb from '../../lib/helpers/int2rgb';
 
 import SERVER_SOCKET_MESSAGE from '../../lib/constants/ServerSocketMessage';
 import CLIENT_SOCKET_HANDLER_EVENTS from '../lib/constants/ClientSocketHandlerEvents';
@@ -78,10 +79,32 @@ class EmulatedLEDMatrix extends React.Component {
 
   /**
    * @description
+   * Fired when a socket message comes from the server to update the emulator frame data
+   *
+   * @param {Uint32Array} pixelData
+   */
+  _handleUpdateEmulatorFrame = (pixelData) => {
+    if (Array.isArray(pixelData)) {
+      pixelData.forEach((pixel, index) => {
+        if (this.pixelRefs[index].current) {
+          const rgb = int2rgb(pixel);
+          this.pixelRefs[index].current.style.backgroundColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+        }
+      });
+    }
+  }
+
+
+  /**
+   * @description
    * Fired whenever a message is received from the socket handler
    */
-  _handleClientSocketHandlerMessage(message, payload) {
-    console.log('[ELM] message', { message, payload });
+  _handleClientSocketHandlerMessage = (message, payload) => {
+    switch (message) {
+      case SERVER_SOCKET_MESSAGE.EMULATOR_FRAME:
+        this._handleUpdateEmulatorFrame(payload.pixelData);
+        break;
+    }
   }
 
 
