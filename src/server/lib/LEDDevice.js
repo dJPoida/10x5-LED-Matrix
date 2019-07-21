@@ -2,6 +2,7 @@ const ws281x = require('rpi-ws281x-native');
 const EventEmitter = require('events');
 
 const LED_DEVICE_EVENT = require('../../lib/constants/LEDDeviceEvent');
+const KERNEL_EVENTS = require('../../lib/constants/KernelEvents');
 
 /**
  * @class LEDDevice
@@ -97,6 +98,9 @@ class LEDDevice extends EventEmitter {
   _bindEvents() {
     this.once(LED_DEVICE_EVENT.INITIALISED, this._handleInitialised.bind(this));
 
+    // Listen for frame update events on the kernel and push the pixel data to the led device
+    this.kernel.on(KERNEL_EVENTS.FRAME_UPDATE, this.updatePixelData.bind(this));
+
     // trap the SIGINT and reset before exit
     process.on('SIGINT', this._handleApplicationTerminate.bind(this));
   }
@@ -152,6 +156,19 @@ class LEDDevice extends EventEmitter {
   updatePixelData(pixelData) {
     this._pixelData = [...pixelData];
     this.device.render(this.pixelData);
+  }
+
+
+  /**
+   * @description
+   * Serialise the state of the server application for transport
+   *
+   * @returns {object}
+   */
+  serializeState() {
+    return {
+      hardwareAvailable: this.hardwareAvailable,
+    };
   }
 }
 

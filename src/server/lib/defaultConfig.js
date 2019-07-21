@@ -14,6 +14,11 @@ const defaultConfig = {
     },
     pixelIndexMap: null,
   },
+  layers: [
+    {
+      type: 'testPattern',
+    },
+  ],
 };
 
 module.exports = defaultConfig;

@@ -11,22 +11,21 @@
     display: block;
     position: relative;
     width: 100%;
+    margin: 1em;
 
     .device {
-      background-color: red;
-      border: 0.5em solid var(--color-emulator-frame);
-      border-radius: 1em;
+      border: 1vmin solid var(--color-emulator-frame);
       display: block;
       position: relative;
   
-      .row {
+      .device-row {
         position: relative;
         display: flex;
     
         .pixel-wrapper {
           flex: 1;
   
-          .pixel {
+          .device-pixel {
             padding-top: 100%;
             background-color: black;
             position: relative;
@@ -39,7 +38,7 @@
               right: 0;
               bottom: 0;
               background-color: var(--color-emulator-pixel-base);
-              border: 0.2em solid var(--color-emulator-frame);
+              border: 0.5vmin solid var(--color-emulator-frame);
             }
           }
         }

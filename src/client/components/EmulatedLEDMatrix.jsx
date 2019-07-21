@@ -120,12 +120,12 @@ class EmulatedLEDMatrix extends React.Component {
           <div className="device">
             {matrix.map((row, index) => (
               // eslint-disable-next-line react/no-array-index-key
-              <div key={index} className="row">
+              <div key={index} className="device-row">
                 {row.map(pixel => (
                   <div className="pixel-wrapper" key={pixel}>
                     <div
                       ref={this.pixelRefs[pixel]}
-                      className="pixel"
+                      className="device-pixel"
                       id={`pixel_${pixel}`}
                     />
                   </div>

@@ -2,6 +2,7 @@ const EventEmitter = require('events');
 const socketIo = require('socket.io');
 
 const SERVER_SOCKET_HANDLER_EVENTS = require('./constants/ServerSocketHandlerEvents');
+const KERNEL_EVENTS = require('../../lib/constants/KernelEvents');
 const SOCKET_ROOMS = require('./constants/SocketRooms');
 const SERVER_SOCKET_MESSAGE = require('../../lib/constants/ServerSocketMessage');
 const CLIENT_SOCKET_MESSAGE = require('../../lib/constants/ClientSocketMessage');
@@ -26,6 +27,7 @@ class ServerSocketHandler extends EventEmitter
 
     this._kernel = kernel;
     this._connectedClients = 0;
+    this._emulatorClients = 0;
     this._io = socketIo(kernel.http);
 
     this._bindEvents();
@@ -51,6 +53,12 @@ class ServerSocketHandler extends EventEmitter
 
 
   /**
+   * @type {number}
+   */
+  get emulatorClients() { return this._emulatorClients; }
+
+
+  /**
    * @type {object}
    */
   get serverState() { return this.kernel.serializeState(); }
@@ -63,6 +71,8 @@ class ServerSocketHandler extends EventEmitter
   _bindEvents() {
     this.once(SERVER_SOCKET_HANDLER_EVENTS.INITIALISED, this._handleInitialised.bind(this));
 
+    this.kernel.on(KERNEL_EVENTS.FRAME_UPDATE, this._handleFrameUpdated.bind(this));
+
     this.io.on('connection', this._handleSocketConnected.bind(this));
   }
 
@@ -73,6 +83,19 @@ class ServerSocketHandler extends EventEmitter
    */
   _handleInitialised() {
     console.log('Server Socket Handler Initialised.');
+  }
+
+
+  /**
+   * @description
+   * Fired by the Kernel when the frame data is updated. If we have any connected emulators we
+   * can use this to push out the pixel data to them.
+   * @param {Uint32Array} pixelData
+   */
+  _handleFrameUpdated(pixelData) {
+    if (this.emulatorClients > 0) {
+      this.sendMessageToClients(SERVER_SOCKET_MESSAGE.EMULATOR_FRAME, { pixelData: Object.values(pixelData) });
+    }
   }
 
 
@@ -130,6 +153,11 @@ class ServerSocketHandler extends EventEmitter
     // Keep track of the connected client
     this._connectedClients += 1;
 
+    // We use this to determine if we need to pump out the frame data
+    if (clientRole === CLIENT_ROLE.EMULATOR) {
+      this._emulatorClients += 1;
+    }
+
     console.log(`Socket Identified as "${clientRole}".`, { connectedClients: this.connectedClients });
     socket.clientRole = clientRole;
 
@@ -167,6 +195,11 @@ class ServerSocketHandler extends EventEmitter
   _handleSocketDisconnected(socket, disconnectReason) {
     if (socket.clientRole !== CLIENT_ROLE.UNIDENTIFIED) {
       this._connectedClients -= 1;
+
+      if (socket.clientRole === CLIENT_ROLE.EMULATOR) {
+        this._emulatorClients -= 1;
+      }
+
       console.log(`Client disconnected: "${disconnectReason}"`, { connectedClients: this.connectedClients });
     } else {
       console.log('Unidentified client disconnected');

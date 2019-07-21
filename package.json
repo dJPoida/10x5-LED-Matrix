@@ -1,6 +1,6 @@
 {
     "name": "led-matrix",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "description": "Remotely control an LED matrix using Raspberry Pi and Node JS",
     "license": "MIT",
     "author": {

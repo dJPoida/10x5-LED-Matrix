@@ -1,11 +1,18 @@
 const EventEmitter = require('events');
+const readline = require('readline');
 
-const Layer = require('./Layers/Layer');
 const argb2int = require('../../lib/helpers/argb2int');
 const argbBlend = require('../../lib/helpers/argbBlend');
 const stripAlpha = require('../../lib/helpers/stripAlpha');
 
+const Layer = require('./Layers/Layer');
+const SolidColorLayer = require('./Layers/SolidColorLayer');
+const TestPatternLayer = require('./Layers/TestPatternLayer');
+const KnightRiderLayer = require('./Layers/KnightRiderLayer');
+
 const BLENDER_EVENTS = require('./constants/BlenderEvents');
+const LAYER_EVENTS = require('./constants/LayerEvents');
+const LAYER_TYPE = require('./constants/LayerType');
 
 /**
  * @class Blender
@@ -27,6 +34,9 @@ class Blender extends EventEmitter {
     this._backgroundLayer = undefined;
     this._pixelData = new Uint32Array(this.numLEDs);
     this._updating = false;
+    this._invalidated = true;
+    this._nextLayerId = 0;
+    this._uniqueBlendId = 0;
 
     this._bindEvents();
   }
@@ -87,12 +97,18 @@ class Blender extends EventEmitter {
 
 
   /**
+   * @type {boolean}
+   */
+  get invalidated() { return this._invalidated; }
+
+
+  /**
    * @description
-   * Returns true if the pixel data is in the middle of an update
+   * Returns true if the layer blender is in the middle of a render
    *
    * @type {boolean}
    */
-  get updating() { return this._updating; }
+  get rendering() { return this._rendering; }
 
 
   /**
@@ -101,17 +117,46 @@ class Blender extends EventEmitter {
    */
   async getPixelData() {
     return new Promise((resolve) => {
-      const waitForNotUpdating = () => {
+      const waitForRender = () => {
         // Don't resolve the pixel data if the frame is being updated
-        if (!this.updating) {
+        if (!this.rendering) {
           resolve(this._pixelData);
         } else {
-          setTimeout(() => { waitForNotUpdating(); }, 0);
+          setTimeout(() => { waitForRender(); }, 0);
         }
       };
 
-      waitForNotUpdating();
+      waitForRender();
     });
+  }
+
+
+  /**
+   * @description
+   * Notify each of the layers to update their frame data
+   */
+  async renderLayers() {
+    // TODO: do we need an updating layers flag here too?
+
+    this.layers.forEach(async (layer) => { await layer.render(); });
+  }
+
+
+  /**
+   * @description
+   * Add a layer
+   *
+   * @param {Layer} layer
+   */
+  addLayer(layer) {
+    // Invalidate the blender whenever a layer is updated
+    layer.on(LAYER_EVENTS.INVALIDATED, this.invalidate.bind(this));
+
+    this.layers.push(layer);
+
+    this.invalidate();
+
+    return layer;
   }
 
 
@@ -129,8 +174,37 @@ class Blender extends EventEmitter {
    * Fired when the Layer Blender is initialised
    */
   _handleInitialised() {
-    this._render();
     console.log('Layer Blender Initialised.');
+  }
+
+
+  /**
+   * @description
+   * Flag that the blended pixel data is no longer valid and should be re-rendered
+   */
+  invalidate() {
+    this._invalidated = true;
+  }
+
+
+  /**
+   * @description
+   * Initialise the Blender
+   */
+  async initialise() {
+    console.log('Blender initialising...');
+
+    // Add a background layer (this is a special layer different from most other layers and not part of the layer stack)
+    this._backgroundLayer = new SolidColorLayer(this.width, this.height, 'Background', { color: argb2int(255, 0, 0, 0) });
+
+    // TODO: remove this test pattern layer once the loading from the config is available
+    this.addLayer(new TestPatternLayer(this.width, this.height));
+
+    // Add a knight rider layer
+    this.addLayer(new KnightRiderLayer(this.width, this.height));
+
+    // Let everyone know that the Layer Blender is initialised
+    this.emit(BLENDER_EVENTS.INITIALISED);
   }
 
 
@@ -149,15 +223,22 @@ class Blender extends EventEmitter {
     // Prevent anyone from accessing the pixel data while we're updating it
     this._updating = true;
     try {
-      console.log('Updating Pixel Data');
+      // If nothing has changed then don't bother updating the pixel data
+      if (!this._invalidated) return;
+
+      this._uniqueBlendId += 1;
+      process.stdout.write(`RENDERED UNIQUE FRAME: ${this._uniqueBlendId}`);
+      readline.cursorTo(process.stdout, 0);
 
       // Start with the background layer data
-      const newPixelData = new Uint32Array(this.backgroundLayer.pixelData);
+      const newPixelData = new Uint32Array(this.backgroundLayer.getPixelData());
 
       // Iterate over each of the layers and blend their pixel data down into the return pixel data
       this.layers.forEach((layer) => {
+        const layerPixelData = layer.getPixelData();
+
         for (let p = 0; p < this.numLEDs; p += 1) {
-          newPixelData[p] = argbBlend(newPixelData[p], layer.pixelData[p]);
+          newPixelData[p] = argbBlend(newPixelData[p], layerPixelData[p]);
         }
       });
 
@@ -168,54 +249,9 @@ class Blender extends EventEmitter {
 
       this._pixelData = newPixelData;
     } finally {
+      this._invalidated = false;
       this._updating = false;
     }
-  }
-
-
-  /**
-   * @description
-   * Initialise the Blender
-   */
-  async initialise() {
-    console.log('Blender initialising...');
-
-    // Add a background layer
-    this._backgroundLayer = new Layer('background', this.width, this.height, 'Background');
-
-    // @TODO: improve this to use an iterator from the layer
-    for (let y = 0; y < this.height; y += 1) {
-      for (let x = 0; x < this.width; x += 1) {
-        this._backgroundLayer.setPixel(x, y, argb2int(255, 0, 0, 0));
-      }
-    }
-
-    const testLayer1 = new Layer('1', this.width, this.height, 'Test Layer 1');
-
-    testLayer1.setPixel(0, 0, argb2int(255, 255, 0, 0));
-    testLayer1.setPixel(this.width - 1, 0, argb2int(255, 0, 255, 0));
-    testLayer1.setPixel(this.width - 1, this.height - 1, argb2int(255, 0, 0, 255));
-    testLayer1.setPixel(0, this.height - 1, argb2int(255, 255, 255, 255));
-    testLayer1.setPixel(1, 1, argb2int(128, 255, 0, 0));
-    testLayer1.setPixel(this.width - 2, 1, argb2int(128, 0, 255, 0));
-    testLayer1.setPixel(this.width - 2, this.height - 2, argb2int(128, 0, 0, 255));
-    testLayer1.setPixel(1, this.height - 2, argb2int(128, 255, 255, 255));
-
-    this.layers.push(testLayer1);
-
-    const testLayer2 = new Layer('1', this.width, this.height, 'testLayer2');
-    for (let y = 0; y < this.height; y += 1) {
-      for (let x = 0; x < this.width; x += 1) {
-        testLayer2.setPixel(x, y, argb2int(127, 255, 255, 255));
-      }
-    }
-
-    // this.layers.push(testLayer2);
-
-    // TODO: bind listeners to the layers and update pixel data when they change
-
-    // Let everyone know that the Layer Blender is initialised
-    this.emit(BLENDER_EVENTS.INITIALISED);
   }
 }
 

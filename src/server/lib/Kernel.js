@@ -37,7 +37,8 @@ class Kernel extends EventEmitter {
     this._ledDevice = new LEDDevice(this);
     this._blender = new Blender(this);
     this._socketHandler = new ServerSocketHandler(this);
-    this._updatingFrame = false;
+    this._renderInterval = undefined;
+    this._rendering = false;
 
     this._bindEvents();
 
@@ -88,6 +89,15 @@ class Kernel extends EventEmitter {
 
   /**
    * @description
+   * Returns true if the frame is currently being rendered to the device
+   *
+   * @type {boolean}
+   */
+  get rendering() { return this._rendering; }
+
+
+  /**
+   * @description
    * Bind the event listeners this class cares about
    */
   _bindEvents() {
@@ -100,7 +110,7 @@ class Kernel extends EventEmitter {
    * Fired once after the kernel has initialised
    */
   _handleInitialised() {
-    console.log('Kernel Initialised.');
+    console.log('Kernel Initialised.\n');
     this.run();
   }
 
@@ -112,10 +122,18 @@ class Kernel extends EventEmitter {
    * @TODO: Error handling
    */
   async initialise() {
-    console.log('Kernel initialising...');
+    console.log('\nKernel initialising...');
+
+    console.log('Device Width: ', this.config.device.resolution.width);
+    console.log('Device Height: ', this.config.device.resolution.height);
+    console.log('FPS: ', this.config.device.fps);
 
     // Initialise the LED Device Controller
     await this.ledDevice.initialise();
+
+    if (!this.ledDevice.hardwareAvailable) {
+      console.warn('\n===========================================\nWARNING: LED DEVICE HARDWARE NOT AVAILABLE!\n===========================================\n');
+    }
 
     // Initialise the Blender
     await this.blender.initialise();
@@ -132,7 +150,7 @@ class Kernel extends EventEmitter {
    * @description
    * Run the application
    */
-  run() {
+  async run() {
     console.log('Kernel Running...');
 
     // development
@@ -189,14 +207,8 @@ class Kernel extends EventEmitter {
       throw new Error(`Failed to begin http server on port ${this.config.server.port}: ${ex}`);
     }
 
-    // Start the Frame Update Interval
-    this._frameUpdateInterval = setInterval(() => {
-      try {
-        this.updateFrame();
-      } catch (ex) {
-        console.error(ex);
-      }
-    }, 1000 / this.config.fps);
+    // Start the Frame Render Interval
+    this._renderInterval = setInterval(this.render.bind(this), 1000 / this.config.device.fps);
   }
 
 
@@ -204,21 +216,20 @@ class Kernel extends EventEmitter {
    * @description
    * Re-draws the frame based on the current display buffer
    */
-  async updateFrame() {
-    if (this.updatingFrame) {
+  async render() {
+    if (this.rendering) {
       console.warn('skipped frame');
       return;
     }
-    this._updatingFrame = true;
+    this._rendering = true;
     try {
-    // Get the pixel data from the blender (on its own terms)
+      // Get the pixel data from the blender (on its own terms)
       const pixelData = await this.blender.getPixelData();
 
-      this.ledDevice.updatePixelData(pixelData);
+      // Notify anything that cares about the frame data
       this.emit(KERNEL_EVENTS.FRAME_UPDATE, { pixelData });
-      this.socketHandler.sendMessageToClients(SERVER_SOCKET_MESSAGE.EMULATOR_FRAME, { pixelData: Object.values(pixelData) });
     } finally {
-      this._updatingFrame = false;
+      this._rendering = false;
     }
   }
 
@@ -231,8 +242,7 @@ class Kernel extends EventEmitter {
    */
   serializeState() {
     return {
-      some: 'data',
-      to: 'do',
+      ledDevice: this.ledDevice.serializeState(),
     };
   }
 }
