@@ -5,14 +5,13 @@ const argb2int = require('../../lib/helpers/argb2int');
 const argbBlend = require('../../lib/helpers/argbBlend');
 const stripAlpha = require('../../lib/helpers/stripAlpha');
 
-const Layer = require('./Layers/Layer');
 const SolidColorLayer = require('./Layers/SolidColorLayer');
 const TestPatternLayer = require('./Layers/TestPatternLayer');
 const KnightRiderLayer = require('./Layers/KnightRiderLayer');
 
 const BLENDER_EVENTS = require('./constants/BlenderEvents');
 const LAYER_EVENTS = require('./constants/LayerEvents');
-const LAYER_TYPE = require('./constants/LayerType');
+
 
 /**
  * @class Blender
@@ -22,6 +21,7 @@ const LAYER_TYPE = require('./constants/LayerType');
  * @see https://50linesofco.de/post/2017-02-13-bits-and-bytes-in-javascript
  */
 class Blender extends EventEmitter {
+
   /**
    * @constructor
    * @param {Kernel} kernel
@@ -33,7 +33,7 @@ class Blender extends EventEmitter {
     this._layers = [];
     this._backgroundLayer = undefined;
     this._pixelData = new Uint32Array(this.numLEDs);
-    this._updating = false;
+    this._rendering = false;
     this._invalidated = true;
     this._nextLayerId = 0;
     this._uniqueBlendId = 0;
@@ -116,6 +116,9 @@ class Blender extends EventEmitter {
    * Gets the pixel data without conflicting with a frame update
    */
   async getPixelData() {
+    // To be sure the pixel data is up to date we need to fire off the render
+    this.render();
+
     return new Promise((resolve) => {
       const waitForRender = () => {
         // Don't resolve the pixel data if the frame is being updated
@@ -128,17 +131,6 @@ class Blender extends EventEmitter {
 
       waitForRender();
     });
-  }
-
-
-  /**
-   * @description
-   * Notify each of the layers to update their frame data
-   */
-  async renderLayers() {
-    // TODO: do we need an updating layers flag here too?
-
-    this.layers.forEach(async (layer) => { await layer.render(); });
   }
 
 
@@ -201,7 +193,7 @@ class Blender extends EventEmitter {
     this.addLayer(new TestPatternLayer(this.width, this.height));
 
     // Add a knight rider layer
-    this.addLayer(new KnightRiderLayer(this.width, this.height));
+    // this.addLayer(new KnightRiderLayer(this.width, this.height));
 
     // Let everyone know that the Layer Blender is initialised
     this.emit(BLENDER_EVENTS.INITIALISED);
@@ -211,21 +203,25 @@ class Blender extends EventEmitter {
   /**
    * @description
    * Blend all of the layers and update the internal pixelData array
+   *
+   * @returns {boolean} true if the pixel data can be considered valid
    */
-  _render() {
-    if (this.updating) {
-      console.warn('Skipped render: already updating pixel data.');
-      return;
+  async render() {
+    // If nothing has changed then don't bother updating the pixel data
+    if (!this._invalidated) return true;
+
+    // Can't render twice at the same time. Bail and warn about skipping frames.
+    if (this.rendering) {
+      console.warn('Skipped render: already rendering pixel data.');
+      return false;
     }
 
     // TODO: log and broadcast the time taken to blend so we can avoid over complicated renders
 
     // Prevent anyone from accessing the pixel data while we're updating it
-    this._updating = true;
+    this._rendering = true;
     try {
-      // If nothing has changed then don't bother updating the pixel data
-      if (!this._invalidated) return;
-
+      // TODO: This is purely for debug purposes. Prolly need to take it out at some point
       this._uniqueBlendId += 1;
       process.stdout.write(`RENDERED UNIQUE FRAME: ${this._uniqueBlendId}`);
       readline.cursorTo(process.stdout, 0);
@@ -234,8 +230,8 @@ class Blender extends EventEmitter {
       const newPixelData = new Uint32Array(this.backgroundLayer.getPixelData());
 
       // Iterate over each of the layers and blend their pixel data down into the return pixel data
-      this.layers.forEach((layer) => {
-        const layerPixelData = layer.getPixelData();
+      this.layers.forEach(async (layer) => {
+        const layerPixelData = await layer.getPixelData();
 
         for (let p = 0; p < this.numLEDs; p += 1) {
           newPixelData[p] = argbBlend(newPixelData[p], layerPixelData[p]);
@@ -248,10 +244,14 @@ class Blender extends EventEmitter {
       }
 
       this._pixelData = newPixelData;
+    } catch (ex) {
+      console.error('Blender.render() error: ', ex);
+      return false;
     } finally {
       this._invalidated = false;
-      this._updating = false;
+      this._rendering = false;
     }
+    return true;
   }
 }
 

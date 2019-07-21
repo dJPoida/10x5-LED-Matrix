@@ -1,4 +1,6 @@
 import React from 'react';
+import classNames from 'classnames';
+
 import EmulatedLEDMatrix from '../../components/EmulatedLEDMatrix';
 import clientSocketHandler from '../../lib/ClientSocketHandler';
 
@@ -16,6 +18,7 @@ class EmulatorApp extends React.Component {
 
     this.state = {
       fps: 0,
+      connected: clientSocketHandler.connected,
     };
 
     this.framesReceived = 0;
@@ -54,10 +57,31 @@ class EmulatorApp extends React.Component {
 
   /**
    * @description
+   * Fired whenever the socket handler connects
+   */
+  _handleSocketHandlerConnected = () => {
+    this.setState({ connected: true });
+  }
+
+
+  /**
+   * @description
+   * Fired whenever the socket handler disconnects
+   */
+  _handleSocketHandlerDisconnected = () => {
+    this.setState({ connected: false });
+  }
+
+
+  /**
+   * @description
    * Bind the event listeners this class cares about
    */
   _bindEvents = () => {
-    clientSocketHandler.on(CLIENT_SOCKET_HANDLER_EVENTS.MESSAGE, this._handleClientSocketHandlerMessage);
+    clientSocketHandler
+      .on(CLIENT_SOCKET_HANDLER_EVENTS.MESSAGE, this._handleClientSocketHandlerMessage)
+      .on(CLIENT_SOCKET_HANDLER_EVENTS.CONNECTED, this._handleSocketHandlerConnected)
+      .on(CLIENT_SOCKET_HANDLER_EVENTS.DISCONNECTED, this._handleSocketHandlerDisconnected);
   }
 
 
@@ -78,11 +102,11 @@ class EmulatorApp extends React.Component {
    * React: Render
    */
   render() {
-    const { fps } = this.state;
+    const { fps, connected } = this.state;
     return (
       <div className="app emulator">
         <div className="connectivity">
-          <div className="indicator disconnected" />
+          <div className={classNames('indicator', { 'disconnected': !connected, 'connected': connected })} />
           <div className="fps">
             <span ref={this.fpsIndicatorRef}>{`${fps} fps`}</span>
           </div>

@@ -9,7 +9,6 @@ const ServerSocketHandler = require('./ServerSocketHandler');
 const Router = require('../routes/Router');
 
 const KERNEL_EVENTS = require('../../lib/constants/KernelEvents');
-const SERVER_SOCKET_MESSAGE = require('../../lib/constants/ServerSocketMessage');
 
 const distPath = path.resolve(__dirname, '../../../dist');
 const clientPath = path.resolve(distPath, 'client');
@@ -221,6 +220,8 @@ class Kernel extends EventEmitter {
       console.warn('skipped frame');
       return;
     }
+
+    // Keep track of the fact w're rendering so that we don't render twice at the same time
     this._rendering = true;
     try {
       // Get the pixel data from the blender (on its own terms)

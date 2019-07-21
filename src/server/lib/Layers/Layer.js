@@ -20,8 +20,7 @@ class Layer extends EventEmitter {
     this._name = name;
     this._width = width;
     this._height = height;
-    this._updateStack = 0;
-    this._rendering = false;
+    this._renderStack = 0;
     this._invalidated = true;
     this._pixelData = new Uint32Array(width * height);
   }
@@ -47,47 +46,71 @@ class Layer extends EventEmitter {
 
   /**
    * @description
-   * Returns true if the pixel data is in the middle of an update
-   *
-   * @type {boolean}
+   * Returns true if multiple render operations are being performed on the layer
    */
-  get rendering() { return this._rendering; }
+  get rendering() { return this._renderStack > 0; }
 
 
   /**
    * @description
-   * Returns true if multiple update operations are being performed on the layer
+   * Begin some form of bulk layer render. This method should be followed buy a
+   * corresponding endRender().
    */
-  get updating() { return this._updateStack > 0; }
+  beginRender() {
+    const wasRendering = this.rendering;
+    this._renderStack += 1;
 
-
-  /**
-   * @description
-   * Begin some form of bulk layer update. This method should be followed buy a
-   * corresponding endUpdate().
-   */
-  beginUpdate() {
-    const wasUpdating = this.updating;
-    this._updateStack += 1;
-
-    if (!wasUpdating) {
-      this.emit(LAYER_EVENTS.UPDATE_STARTED);
+    if (!wasRendering) {
+      this.emit(LAYER_EVENTS.RENDER_STARTED);
     }
   }
 
 
   /**
    * @description
-   * Begin some form of bulk layer update. This method should be followed buy a
-   * corresponding endUpdate().
+   * End a bulk layer render. This method should be followed buy a
+   * corresponding endRender().
    */
-  endUpdate() {
-    const wasUpdating = this.updating;
-    this._updateStack = Math.max(this._updateStack - 1, 0);
+  endRender() {
+    const wasRendering = this.rendering;
+    this._renderStack = Math.max(this._renderStack - 1, 0);
 
-    if (!this.updating && wasUpdating) {
-      this.emit(LAYER_EVENTS.UPDATED_FINISHED);
+    if (!this.rendering && wasRendering) {
+      this.emit(LAYER_EVENTS.RENDER_FINISHED);
+
+      // Notify all listeners of invalidation (if invalidated)
+      this.invalidate();
     }
+  }
+
+
+  /**
+   * @description
+   * Use this function to wait for any outstanding render functions before
+   * performing an action that may interfere with a render
+   */
+  async waitForRender() {
+    return new Promise((resolve) => {
+      const waitForRender = () => {
+        if (!this.rendering) {
+          resolve();
+        } else {
+          setTimeout(this.waitForRender, 0);
+        }
+      };
+
+      waitForRender();
+    });
+  }
+
+
+  /**
+   * @description
+   * Flag that the blended pixel data is no longer valid and should be re-rendered
+   */
+  invalidate() {
+    this._invalidated = true;
+    this.emit(LAYER_EVENTS.INVALIDATED);
   }
 
 
@@ -100,11 +123,11 @@ class Layer extends EventEmitter {
    * @param {number} color a 32bit color value
    */
   setPixel(x, y, color) {
-    this.beginUpdate();
+    this.beginRender();
     try {
       this._pixelData[(y * this.width) + x] = color;
     } finally {
-      this.endUpdate();
+      this.endRender();
     }
   }
 
@@ -115,38 +138,18 @@ class Layer extends EventEmitter {
    */
   async getPixelData() {
     return new Promise((resolve) => {
-      const waitForRender = () => {
+      const waitForUpdate = () => {
         // Don't resolve the pixel data if the frame is being updated
-        if (!this.rendering) {
+        if (!this.updating) {
           resolve(this._pixelData);
         } else {
-          setTimeout(() => { waitForRender(); }, 0);
+          setTimeout(() => { waitForUpdate(); }, 0);
         }
       };
 
-      waitForRender();
+      waitForUpdate();
     });
   }
-
-
-  /**
-   * @description
-   * Called by layers that require frequent updating
-   */
-  _nextFrame() {
-    this.emit(LAYER_EVENTS.UPDATED);
-  }
-
-
-  /**
-   * @description
-   * calculate the pixel data for this layer
-   *
-   * @note this function should be overridden in descendant classes
-   */
-  _render() {
-  }
-
 }
 
 module.exports = Layer;

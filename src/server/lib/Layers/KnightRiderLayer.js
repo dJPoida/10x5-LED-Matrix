@@ -22,51 +22,66 @@ class KnightRiderLayer extends Layer {
     this._color = options && options.color ? options.color : rgb2int(255, 0, 0);
     this._sweepRight = true;
     this._sweepFrame = 0;
-    this._updateInterval = setInterval(this._nextFrame.bind(this), 1000 / width);
-
-    this.on(LAYER_EVENTS.UPDATED, this._handleUpdated.bind(this));
+    this._updateFrameInterval = setInterval(this.updateFrame.bind(this), 1000 / width);
   }
 
 
   /**
    * @description
-   * Fired when a layer is updated
+   * Returns true if the frame data is being updated (not the render)
    */
-  _handleUpdated() {
-    this._render();
-  }
+  get updatingFrame() { return this._updatingFrame; }
 
 
   /**
    * @description
    * Calculate the next frame data
    */
-  _nextFrame() {
-    this._sweepFrame += 1;
-    if (this._sweepFrame > this.width) {
-      this._sweepFrame = 0;
-      this._sweepRight = !this._sweepRight;
+  async updateFrame() {
+    if (this.updatingFrame) {
+      console.log('KnightRiderLayer.nextFrame() - Skipped Frame: already updating frame.');
+      return;
     }
 
-    this._xPos = this._sweepRight ? this._sweepFrame : this.width - this._sweepFrame;
+    await this.waitForRender();
 
-    super._nextFrame();
+    this._updatingFrame = true;
+    try {
+      this._sweepFrame += 1;
+      if (this._sweepFrame > this.width) {
+        this._sweepFrame = 0;
+        this._sweepRight = !this._sweepRight;
+      }
+
+      this._xPos = this._sweepRight ? this._sweepFrame : this.width - this._sweepFrame;
+      this.render();
+    } finally {
+      this._updatingFrame = false;
+    }
   }
 
 
   /**
-   * @inheritDoc
+   * @description
+   * Render the pixel data
    */
-  _render() {
-    this._updating = true;
+  render() {
+    // Can't render twice at the same time. Bail and warn about skipping frames.
+    if (this.rendering) {
+      console.warn('KnightRiderLayer: Skipped render - already rendering pixel data.');
+      return;
+    }
+
+    this.beginRender();
     try {
       for (let y = 0; y < this.height; y += 1) {
         for (let x = 0; x < this.width; x += 1) {
           this._pixelData[(y * this.width) + x] = this._xPos === x ? this._color : 0x00000000;
         }
       }
+      console.log(this._pixelData);
     } finally {
-      this._updating = false;
+      this.endRender();
     }
   }
 

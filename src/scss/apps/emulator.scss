@@ -20,6 +20,10 @@
       background-color: red;
       width: 1em;
       height: 1em;
+
+      &.connected {
+        background-color: green;
+      }
     }
 
     .fps {

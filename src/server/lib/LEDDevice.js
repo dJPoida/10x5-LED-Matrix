@@ -99,7 +99,7 @@ class LEDDevice extends EventEmitter {
     this.once(LED_DEVICE_EVENT.INITIALISED, this._handleInitialised.bind(this));
 
     // Listen for frame update events on the kernel and push the pixel data to the led device
-    this.kernel.on(KERNEL_EVENTS.FRAME_UPDATE, this.updatePixelData.bind(this));
+    this.kernel.on(KERNEL_EVENTS.FRAME_UPDATE, this._handleFrameUpdate.bind(this));
 
     // trap the SIGINT and reset before exit
     process.on('SIGINT', this._handleApplicationTerminate.bind(this));
@@ -153,8 +153,8 @@ class LEDDevice extends EventEmitter {
    * @description
    * Re-draws the frame based on the current display buffer
    */
-  updatePixelData(pixelData) {
-    this._pixelData = [...pixelData];
+  _handleFrameUpdate(frame) {
+    this._pixelData = [...frame.pixelData];
     this.device.render(this.pixelData);
   }
 

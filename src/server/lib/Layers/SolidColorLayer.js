@@ -13,7 +13,7 @@ class SolidColorLayer extends Layer {
     super(width, height, name, options);
 
     this._color = options.color || 0x00000000;
-    this._render();
+    this.render();
   }
 
 
@@ -23,15 +23,21 @@ class SolidColorLayer extends Layer {
    */
   get color() { return this._color; }
 
-  set color(value) { this._color = value; this._render(); }
+  set color(value) { this._color = value; this.render(); }
 
 
   /**
-   * @inheritDoc
+   * @description
+   * Render the solid colour to the pixel data
    */
-  _render() {
-    for (let p = 0; p < this.width * this.height; p += 1) {
-      this._pixelData[p] = this._color;
+  render() {
+    this.beginRender();
+    try {
+      for (let p = 0; p < this.width * this.height; p += 1) {
+        this._pixelData[p] = this._color;
+      }
+    } finally {
+      this.endRender();
     }
   }
 }

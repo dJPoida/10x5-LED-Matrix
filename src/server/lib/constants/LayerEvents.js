@@ -1,7 +1,7 @@
 const LAYER_EVENTS = {
   INVALIDATED: 'invalidated',
-  UPDATE_STARTED: 'updateStarted',
-  UPDATED_FINISHED: 'updateFinished',
+  RENDER_STARTED: 'renderStarted',
+  RENDER_FINISHED: 'renderFinished',
 };
 
 module.exports = LAYER_EVENTS;
