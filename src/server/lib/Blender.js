@@ -114,11 +114,10 @@ class Blender extends EventEmitter {
   /**
    * @description
    * Gets the pixel data without conflicting with a frame update
+   *
+   * @returns {Uint32Array}
    */
   async getPixelData() {
-    // To be sure the pixel data is up to date we need to fire off the render
-    this.render();
-
     return new Promise((resolve) => {
       const waitForRender = () => {
         // Don't resolve the pixel data if the frame is being updated
@@ -204,11 +203,11 @@ class Blender extends EventEmitter {
    * @description
    * Blend all of the layers and update the internal pixelData array
    *
-   * @returns {boolean} true if the pixel data can be considered valid
+   * @returns {boolean} true if the pixel data was changed
    */
   async render() {
     // If nothing has changed then don't bother updating the pixel data
-    if (!this._invalidated) return true;
+    if (!this._invalidated) return false;
 
     // Can't render twice at the same time. Bail and warn about skipping frames.
     if (this.rendering) {
@@ -227,12 +226,13 @@ class Blender extends EventEmitter {
       readline.cursorTo(process.stdout, 0);
 
       // Start with the background layer data
-      const newPixelData = new Uint32Array(this.backgroundLayer.getPixelData());
+      const newPixelData = new Uint32Array(await this.backgroundLayer.getPixelData());
+
+      // because layer.getPixelData() is async, we have to get them all using await / promises
+      const allLayersPixelData = await Promise.all(this.layers.map(layer => layer.getPixelData()));
 
       // Iterate over each of the layers and blend their pixel data down into the return pixel data
-      this.layers.forEach(async (layer) => {
-        const layerPixelData = await layer.getPixelData();
-
+      allLayersPixelData.forEach((layerPixelData) => {
         for (let p = 0; p < this.numLEDs; p += 1) {
           newPixelData[p] = argbBlend(newPixelData[p], layerPixelData[p]);
         }
@@ -243,7 +243,8 @@ class Blender extends EventEmitter {
         newPixelData[p] = stripAlpha(newPixelData[p]);
       }
 
-      this._pixelData = newPixelData;
+      this._pixelData = Object.values(newPixelData);
+
     } catch (ex) {
       console.error('Blender.render() error: ', ex);
       return false;

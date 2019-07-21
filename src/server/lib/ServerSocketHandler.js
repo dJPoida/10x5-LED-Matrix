@@ -59,18 +59,13 @@ class ServerSocketHandler extends EventEmitter
 
 
   /**
-   * @type {object}
-   */
-  get serverState() { return this.kernel.serializeState(); }
-
-
-  /**
    * @description
    * Bind the event listeners this class cares about
    */
   _bindEvents() {
     this.once(SERVER_SOCKET_HANDLER_EVENTS.INITIALISED, this._handleInitialised.bind(this));
 
+    // Listen for frame updates and broadcast them to any connected emulators
     this.kernel.on(KERNEL_EVENTS.FRAME_UPDATE, this._handleFrameUpdated.bind(this));
 
     this.io.on('connection', this._handleSocketConnected.bind(this));
@@ -90,11 +85,11 @@ class ServerSocketHandler extends EventEmitter
    * @description
    * Fired by the Kernel when the frame data is updated. If we have any connected emulators we
    * can use this to push out the pixel data to them.
-   * @param {Uint32Array} pixelData
+   * @param {object} frame
    */
-  _handleFrameUpdated(pixelData) {
+  _handleFrameUpdated(frame) {
     if (this.emulatorClients > 0) {
-      this.sendMessageToClients(SERVER_SOCKET_MESSAGE.EMULATOR_FRAME, { pixelData: Object.values(pixelData) });
+      this.sendMessageToClients(SERVER_SOCKET_MESSAGE.EMULATOR_FRAME, { pixelData: frame.pixelData });
     }
   }
 
@@ -178,7 +173,10 @@ class ServerSocketHandler extends EventEmitter
 
     // Send an initial server state to the client
     setTimeout(() => {
-      this.sendMessageToClients(SERVER_SOCKET_MESSAGE.INITIALISE, this.serverState, null, socket);
+      // Send any initialisation required for all clients
+      this.kernel.serializeState(clientRole === CLIENT_ROLE.EMULATOR).then(
+        serverState => this.sendMessageToClients(SERVER_SOCKET_MESSAGE.INITIALISE, serverState, null, socket),
+      );
     }, 0);
   }
 

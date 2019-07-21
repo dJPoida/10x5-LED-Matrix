@@ -86,7 +86,7 @@ class EmulatedLEDMatrix extends React.Component {
   _handleUpdateEmulatorFrame = (pixelData) => {
     if (Array.isArray(pixelData)) {
       pixelData.forEach((pixel, index) => {
-        if (this.pixelRefs[index].current) {
+        if ((typeof this.pixelRefs[index] !== 'undefined') && this.pixelRefs[index].current) {
           const rgb = int2rgb(pixel);
           this.pixelRefs[index].current.style.backgroundColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
         }
@@ -101,6 +101,7 @@ class EmulatedLEDMatrix extends React.Component {
    */
   _handleClientSocketHandlerMessage = (message, payload) => {
     switch (message) {
+      case SERVER_SOCKET_MESSAGE.INITIALISE:
       case SERVER_SOCKET_MESSAGE.EMULATOR_FRAME:
         this._handleUpdateEmulatorFrame(payload.pixelData);
         break;

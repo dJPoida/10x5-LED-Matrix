@@ -1,8 +1,6 @@
 const Layer = require('./Layer');
 const rgb2int = require('../../../lib/helpers/rgb2Int');
 
-const LAYER_EVENTS = require('../constants/LayerEvents');
-
 class KnightRiderLayer extends Layer {
   /**
    * @constructor
@@ -20,17 +18,30 @@ class KnightRiderLayer extends Layer {
     this._xPos = 0;
 
     this._color = options && options.color ? options.color : rgb2int(255, 0, 0);
+    this._fps = options && options.fps ? options.fps : 30;
+
     this._sweepRight = true;
     this._sweepFrame = 0;
-    this._updateFrameInterval = setInterval(this.updateFrame.bind(this), 1000 / width);
+    this._updateFrameInterval = setInterval(this.updateFrame.bind(this), 1000 / this.fps);
   }
 
 
   /**
    * @description
    * Returns true if the frame data is being updated (not the render)
+   *
+   * @type {boolean}
    */
   get updatingFrame() { return this._updatingFrame; }
+
+
+  /**
+   * @description
+   * The frames per second (fps) that this animation should run
+   *
+   * @type {number}
+   */
+  get fps() { return this._fps; }
 
 
   /**

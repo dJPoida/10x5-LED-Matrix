@@ -221,14 +221,17 @@ class Kernel extends EventEmitter {
       return;
     }
 
-    // Keep track of the fact w're rendering so that we don't render twice at the same time
+    // Keep track of the fact we're rendering so that we don't render twice at the same time
     this._rendering = true;
     try {
-      // Get the pixel data from the blender (on its own terms)
-      const pixelData = await this.blender.getPixelData();
+      // TODO: Turn the `|| true` here into a config variable that preserves battery or something
+      if (await this.blender.render() || true) {
+        // Get the pixel data from the blender (on its own terms)
+        const pixelData = await this.blender.getPixelData();
 
-      // Notify anything that cares about the frame data
-      this.emit(KERNEL_EVENTS.FRAME_UPDATE, { pixelData });
+        // Notify anything that cares about the frame data
+        this.emit(KERNEL_EVENTS.FRAME_UPDATE, { pixelData });
+      }
     } finally {
       this._rendering = false;
     }
@@ -239,12 +242,20 @@ class Kernel extends EventEmitter {
    * @description
    * Serialise the state of the server application for transport
    *
+   * @param {boolean} includePixelData whether or not to include the current pixel data in the response
+   *
    * @returns {object}
    */
-  serializeState() {
-    return {
+  async serializeState(includePixelData) {
+    const state = {
       ledDevice: this.ledDevice.serializeState(),
     };
+
+    if (includePixelData) {
+      state.pixelData = await this.blender.getPixelData();
+    }
+
+    return state;
   }
 }
 
