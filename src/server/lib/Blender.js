@@ -8,6 +8,7 @@ const stripAlpha = require('../../lib/helpers/stripAlpha');
 const SolidColorLayer = require('./Layers/SolidColorLayer');
 const TestPatternLayer = require('./Layers/TestPatternLayer');
 const KnightRiderLayer = require('./Layers/KnightRiderLayer');
+const GhostLayer = require('./Layers/GhostLayer');
 
 const BLENDER_EVENTS = require('./constants/BlenderEvents');
 const LAYER_EVENTS = require('./constants/LayerEvents');
@@ -194,6 +195,8 @@ class Blender extends EventEmitter {
     // TODO: remove this test layer once the loading from config is available
     this.addLayer(new KnightRiderLayer(this, { fps: 5 }));
 
+    // TODO: remove this test layer once the loading from config is available
+    this.addLayer(new GhostLayer(this, { color: argb2int(128, 255, 255, 0) }));
 
     // Let everyone know that the Layer Blender is initialised
     this.emit(BLENDER_EVENTS.INITIALISED);
