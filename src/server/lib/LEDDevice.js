@@ -168,6 +168,10 @@ class LEDDevice extends EventEmitter {
   serializeState() {
     return {
       hardwareAvailable: this.hardwareAvailable,
+      width: this.width,
+      height: this.height,
+      brightness: this.brightness,
+      fps: this.fps,
     };
   }
 }

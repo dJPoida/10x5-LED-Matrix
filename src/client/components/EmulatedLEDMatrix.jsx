@@ -18,34 +18,43 @@ class EmulatedLEDMatrix extends React.Component {
   constructor(props) {
     super(props);
 
-    // TODO: get these values from the server
-    const width = 10;
-    const height = 5;
-
-    // Iterate over the rows
-    const matrix = [];
-    for (let y = 0; y < height; y += 1) {
-      const row = [];
-      // Iterate over the columns
-      for (let x = 0; x < width; x += 1) {
-        row.push(y * width + x);
-      }
-      matrix.push(row);
-    }
-
     this.state = {
-      // width,
-      // height,
-      matrix,
+      width: undefined,
+      height: undefined,
+      initialised: false,
+      matrix: [],
+      pixelRefs: [],
     };
 
-    // Keep an array of refs to the pixels for faster updating than re-rendering the dom
-    this.pixelRefs = [];
-    for (let i = 0; i < (height * width); i += 1) {
-      this.pixelRefs.push(React.createRef());
+    this._bindEvents();
+  }
+
+
+  /**
+   * @description
+   * Handle changes to the state which may require re-initialisation of the LED Matrix
+   *
+   * @param {object} newProps
+   * @param {object} newState
+   */
+  shouldComponentUpdate(newProps, newState) {
+    const {
+      width,
+      height,
+    } = this.state;
+
+    const {
+      width: newWidth,
+      height: newHeight,
+    } = newState;
+
+    // If either of the width or height has changed, we need to re-generate the matrix
+    if (width !== newWidth || height !== newHeight) {
+      this._extrapolateMatrix(newWidth, newHeight);
+      return false;
     }
 
-    this._bindEvents();
+    return true;
   }
 
 
@@ -85,13 +94,29 @@ class EmulatedLEDMatrix extends React.Component {
    */
   _handleUpdateEmulatorFrame = (pixelData) => {
     if (Array.isArray(pixelData)) {
+      const { pixelRefs } = this.state;
       pixelData.forEach((pixel, index) => {
-        if ((typeof this.pixelRefs[index] !== 'undefined') && this.pixelRefs[index].current) {
+        if ((typeof pixelRefs[index] !== 'undefined') && pixelRefs[index].current) {
           const rgb = int2rgb(pixel);
-          this.pixelRefs[index].current.style.backgroundColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+          pixelRefs[index].current.style.backgroundColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
         }
       });
     }
+  }
+
+
+  /**
+   * @description
+   * Fired when the initialisation message comes in after initial connection to the server
+   *
+   * @param {object} initialState the data from the server provided upon connection
+   */
+  _handleInitialise = (initialState) => {
+    this.setState({
+      initialised: true,
+      width: initialState.ledDevice.width,
+      height: initialState.ledDevice.height,
+    });
   }
 
 
@@ -102,6 +127,9 @@ class EmulatedLEDMatrix extends React.Component {
   _handleClientSocketHandlerMessage = (message, payload) => {
     switch (message) {
       case SERVER_SOCKET_MESSAGE.INITIALISE:
+        this._handleInitialise(payload);
+        break;
+
       case SERVER_SOCKET_MESSAGE.EMULATOR_FRAME:
         this._handleUpdateEmulatorFrame(payload.pixelData);
         break;
@@ -110,30 +138,65 @@ class EmulatedLEDMatrix extends React.Component {
 
 
   /**
+   * @description
+   * Extrapolate the internal matrix used for rendering by multiplying the
+   * width and the height. Also creates the React references required for
+   * updating the DOM elements.
+   *
+   * @param {number} width
+   * @param {number} height
+   */
+  _extrapolateMatrix(width, height) {
+    const newMatrix = [];
+    for (let y = 0; y < height; y += 1) {
+      const row = [];
+      // Iterate over the columns
+      for (let x = 0; x < width; x += 1) {
+        row.push(y * width + x);
+      }
+      newMatrix.push(row);
+    }
+
+    // Keep an array of refs to the pixels for faster updating than re-rendering the dom
+    const newPixelRefs = [];
+    for (let i = 0; i < (height * width); i += 1) {
+      newPixelRefs.push(React.createRef());
+    }
+
+    this.setState({
+      matrix: newMatrix,
+      pixelRefs: newPixelRefs,
+    });
+  }
+
+
+  /**
    * @inheritdoc
    */
   render() {
-    const { matrix } = this.state;
+    const { initialised, matrix, pixelRefs } = this.state;
 
     return (
       <div className="emulated-led-matrix">
         <div className="device-wrapper">
-          <div className="device">
-            {matrix.map((row, index) => (
-              // eslint-disable-next-line react/no-array-index-key
-              <div key={index} className="device-row">
-                {row.map(pixel => (
-                  <div className="pixel-wrapper" key={pixel}>
-                    <div
-                      ref={this.pixelRefs[pixel]}
-                      className="device-pixel"
-                      id={`pixel_${pixel}`}
-                    />
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
+          {initialised && (
+            <div className="device">
+              {matrix.map((row, index) => (
+                // eslint-disable-next-line react/no-array-index-key
+                <div key={index} className="device-row">
+                  {row.map(pixel => (
+                    <div className="pixel-wrapper" key={pixel}>
+                      <div
+                        ref={pixelRefs[pixel]}
+                        className="device-pixel"
+                        id={`pixel_${pixel}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );

@@ -1,5 +1,7 @@
 const EventEmitter = require('events');
 
+const Blender = require('../Blender');
+
 const LAYER_EVENTS = require('../constants/LayerEvents');
 
 /**
@@ -9,33 +11,45 @@ class Layer extends EventEmitter {
 
   /**
    * @constructor
-   * @param {number} width the width of the new layer
-   * @param {number} height the height of the new layer
-   * @param {string} [name="new layer"] an optional name for the layer
+   * @param {Blender} blender a reference to the layer blender
+   * @param {object} [options={}] an optional set of options specific to the type of layer being instantiated
    */
-  constructor(width, height, name = 'new layer') {
+  constructor(blender, options) {
     super();
 
-    console.log(`New layer (${name})`);
-    this._name = name;
-    this._width = width;
-    this._height = height;
+    if (!(blender instanceof Blender.constructor)) {
+      throw new TypeError('New Layer: `blender` parameter must be a reference to the Blender class.');
+    }
+
+    this._blender = blender;
+
+    options = options || {};
+    this._name = options.name || 'New Layer';
+
     this._renderStack = 0;
     this._invalidated = true;
-    this._pixelData = new Uint32Array(width * height);
+    this._pixelData = new Uint32Array(this.width * this.height);
+
+    console.log(`New layer (${this.name})`, { options });
   }
 
 
   /**
-   * @type {number}
+   * @type {Blender}
    */
-  get width() { return this._width; }
+  get blender() { return this._blender; }
 
 
   /**
    * @type {number}
    */
-  get height() { return this._height; }
+  get width() { return this.blender.width; }
+
+
+  /**
+   * @type {number}
+   */
+  get height() { return this.blender.height; }
 
 
   /**

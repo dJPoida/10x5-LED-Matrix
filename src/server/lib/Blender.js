@@ -186,13 +186,13 @@ class Blender extends EventEmitter {
     console.log('Blender initialising...');
 
     // Add a background layer (this is a special layer different from most other layers and not part of the layer stack)
-    this._backgroundLayer = new SolidColorLayer(this.width, this.height, 'Background', { color: argb2int(255, 0, 0, 0) });
-
-    // Add a knight rider layer
-    this.addLayer(new KnightRiderLayer(this.width, this.height), null, { fps: 5 });
+    this._backgroundLayer = new SolidColorLayer(this, { color: argb2int(255, 0, 0, 0) });
 
     // TODO: remove this test pattern layer once the loading from the config is available
-    this.addLayer(new TestPatternLayer(this.width, this.height));
+    this.addLayer(new TestPatternLayer(this));
+
+    // TODO: remove this test layer once the loading from config is available
+    this.addLayer(new KnightRiderLayer(this, { fps: 5 }));
 
 
     // Let everyone know that the Layer Blender is initialised

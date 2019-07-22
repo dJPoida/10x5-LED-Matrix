@@ -2,27 +2,25 @@ const Layer = require('./Layer');
 const argb2int = require('../../../lib/helpers/argb2int');
 
 class KnightRiderLayer extends Layer {
+
   /**
    * @constructor
-   *
-   * @param {number} width the width of the layer
-   * @param {number} height the height of the layer
-   * @param {string} [name="new solid color layer"] an optional name for the layer
-   * @param {object} options options for this layer type
+   * @param {Blender} blender a reference to the layer blender
+   * @param {object} [options={}] an optional set of options specific to the type of layer being instantiated
    */
-  constructor(width, height, name = 'new knight rider layer', options) {
-    super(width, height, name);
+  constructor(blender, options) {
+    super(blender, options);
 
-    this._sweepDuration = 2000;
+    this._sweepDuration = options.sweepDuration || 2000;
+    this._color = options && options.color ? options.color : argb2int(255, 255, 0, 0);
 
     this._xPos = 0;
 
-    this._color = options && options.color ? options.color : argb2int(255, 255, 0, 0);
-    this._fps = options && options.fps ? options.fps : 5;
+    // Update speed is basically the number of pixels we need to traverse by the sweep duration
+    this._updateDelay = (this._sweepDuration / 2) / this.width;
 
     this._sweepRight = true;
-    this._sweepFrame = 0;
-    this._updateFrameInterval = setInterval(this.updateFrame.bind(this), 1000 / this.fps);
+    this._updateFrameInterval = setInterval(this.updateFrame.bind(this), this._updateDelay);
   }
 
 
@@ -33,15 +31,6 @@ class KnightRiderLayer extends Layer {
    * @type {boolean}
    */
   get updatingFrame() { return this._updatingFrame; }
-
-
-  /**
-   * @description
-   * The frames per second (fps) that this animation should run
-   *
-   * @type {number}
-   */
-  get fps() { return this._fps; }
 
 
   /**
@@ -58,13 +47,14 @@ class KnightRiderLayer extends Layer {
 
     this._updatingFrame = true;
     try {
-      this._sweepFrame += 1;
-      if (this._sweepFrame > this.width) {
-        this._sweepFrame = 0;
-        this._sweepRight = !this._sweepRight;
+      if (this._sweepRight && this._xPos >= (this.width - 1)) {
+        this._sweepRight = false;
+      } else if (!this._sweepRight && this._xPos <= 0) {
+        this._sweepRight = true;
       }
 
-      this._xPos = this._sweepRight ? this._sweepFrame : this.width - this._sweepFrame + 1;
+      this._xPos += this._sweepRight ? 1 : -1;
+
       this.render();
     } finally {
       this._updatingFrame = false;
@@ -87,7 +77,7 @@ class KnightRiderLayer extends Layer {
     try {
       for (let y = 0; y < this.height; y += 1) {
         for (let x = 0; x < this.width; x += 1) {
-          this._pixelData[(y * this.width) + x] = this._xPos === x ? this._color : argb2int(255, 0, 0, 0);
+          this._pixelData[(y * this.width) + x] = this._xPos === x ? this._color : 0x00000000;
         }
       }
     } finally {

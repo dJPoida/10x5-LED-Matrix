@@ -3,14 +3,11 @@ const Layer = require('./Layer');
 class SolidColorLayer extends Layer {
   /**
    * @constructor
-   *
-   * @param {number} width the width of the layer
-   * @param {number} height the height of the layer
-   * @param {string} [name="new solid color layer"] an optional name for the layer
-   * @param {object} options options for this layer type
+   * @param {Blender} blender a reference to the layer blender
+   * @param {object} [options={}] an optional set of options specific to the type of layer being instantiated
    */
-  constructor(width, height, name = 'new solid color layer', options) {
-    super(width, height, name, options);
+  constructor(blender, options) {
+    super(blender, options);
 
     this._color = options.color || 0x00000000;
     this.render();

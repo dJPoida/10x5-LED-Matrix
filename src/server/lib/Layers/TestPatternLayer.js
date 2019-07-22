@@ -3,15 +3,14 @@ const Layer = require('./Layer');
 const argb2int = require('../../../lib/helpers/argb2int');
 
 class TestPatternLayer extends Layer {
+
   /**
    * @constructor
-   *
-   * @param {number} width the width of the layer
-   * @param {number} height the height of the layer
-   * @param {string} [name="new solid color layer"] an optional name for the layer
+   * @param {Blender} blender a reference to the layer blender
+   * @param {object} [options={}] an optional set of options specific to the type of layer being instantiated
    */
-  constructor(width, height, name = 'new test pattern layer') {
-    super(width, height, name);
+  constructor(blender, options) {
+    super(blender, options);
 
     this.render();
   }
