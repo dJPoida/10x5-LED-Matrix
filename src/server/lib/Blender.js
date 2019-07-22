@@ -188,11 +188,12 @@ class Blender extends EventEmitter {
     // Add a background layer (this is a special layer different from most other layers and not part of the layer stack)
     this._backgroundLayer = new SolidColorLayer(this.width, this.height, 'Background', { color: argb2int(255, 0, 0, 0) });
 
+    // Add a knight rider layer
+    this.addLayer(new KnightRiderLayer(this.width, this.height), null, { fps: 5 });
+
     // TODO: remove this test pattern layer once the loading from the config is available
     this.addLayer(new TestPatternLayer(this.width, this.height));
 
-    // Add a knight rider layer
-    // this.addLayer(new KnightRiderLayer(this.width, this.height));
 
     // Let everyone know that the Layer Blender is initialised
     this.emit(BLENDER_EVENTS.INITIALISED);

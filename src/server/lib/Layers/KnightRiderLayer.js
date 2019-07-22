@@ -1,5 +1,5 @@
 const Layer = require('./Layer');
-const rgb2int = require('../../../lib/helpers/rgb2Int');
+const argb2int = require('../../../lib/helpers/argb2int');
 
 class KnightRiderLayer extends Layer {
   /**
@@ -17,8 +17,8 @@ class KnightRiderLayer extends Layer {
 
     this._xPos = 0;
 
-    this._color = options && options.color ? options.color : rgb2int(255, 0, 0);
-    this._fps = options && options.fps ? options.fps : 30;
+    this._color = options && options.color ? options.color : argb2int(255, 255, 0, 0);
+    this._fps = options && options.fps ? options.fps : 5;
 
     this._sweepRight = true;
     this._sweepFrame = 0;
@@ -64,7 +64,7 @@ class KnightRiderLayer extends Layer {
         this._sweepRight = !this._sweepRight;
       }
 
-      this._xPos = this._sweepRight ? this._sweepFrame : this.width - this._sweepFrame;
+      this._xPos = this._sweepRight ? this._sweepFrame : this.width - this._sweepFrame + 1;
       this.render();
     } finally {
       this._updatingFrame = false;
@@ -87,10 +87,9 @@ class KnightRiderLayer extends Layer {
     try {
       for (let y = 0; y < this.height; y += 1) {
         for (let x = 0; x < this.width; x += 1) {
-          this._pixelData[(y * this.width) + x] = this._xPos === x ? this._color : 0x00000000;
+          this._pixelData[(y * this.width) + x] = this._xPos === x ? this._color : argb2int(255, 0, 0, 0);
         }
       }
-      console.log(this._pixelData);
     } finally {
       this.endRender();
     }
