@@ -9,6 +9,7 @@ const SolidColorLayer = require('./Layers/SolidColorLayer');
 const TestPatternLayer = require('./Layers/TestPatternLayer');
 const KnightRiderLayer = require('./Layers/KnightRiderLayer');
 const GhostLayer = require('./Layers/GhostLayer');
+const PulseLayer = require('./Layers/PulseLayer');
 
 const BLENDER_EVENTS = require('./constants/BlenderEvents');
 const LAYER_EVENTS = require('./constants/LayerEvents');
@@ -189,14 +190,20 @@ class Blender extends EventEmitter {
     // Add a background layer (this is a special layer different from most other layers and not part of the layer stack)
     this._backgroundLayer = new SolidColorLayer(this, { color: argb2int(255, 0, 0, 0) });
 
+    // TODO: remove this test layer once the loading from config is available
+    this.addLayer(new PulseLayer(this, { duration: 2000, color: argb2int(255, 0, 0, 255) }));
+
     // TODO: remove this test pattern layer once the loading from the config is available
-    this.addLayer(new TestPatternLayer(this));
+    // this.addLayer(new TestPatternLayer(this));
 
     // TODO: remove this test layer once the loading from config is available
-    this.addLayer(new KnightRiderLayer(this, { fps: 5 }));
+    this.addLayer(new KnightRiderLayer(this, { sweepDuration: 2000 }));
 
     // TODO: remove this test layer once the loading from config is available
-    this.addLayer(new GhostLayer(this, { color: argb2int(128, 255, 255, 0) }));
+    this.addLayer(new GhostLayer(this, { color: argb2int(255, 255, 255, 0) }));
+
+    // TODO: remove this test layer once the loading from config is available
+    this.addLayer(new KnightRiderLayer(this, { sweepDuration: 1500, color: argb2int(255, 0, 255, 0) }));
 
     // Let everyone know that the Layer Blender is initialised
     this.emit(BLENDER_EVENTS.INITIALISED);

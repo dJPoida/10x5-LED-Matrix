@@ -1,3 +1,5 @@
+const { easeInOutQuad } = require('js-easing-functions');
+
 const Layer = require('./Layer');
 const argb2int = require('../../../lib/helpers/argb2int');
 
@@ -18,6 +20,7 @@ class KnightRiderLayer extends Layer {
 
     // Update speed is basically the number of pixels we need to traverse by the sweep duration
     this._updateDelay = (this._sweepDuration / 2) / this.width;
+    this._frameNo = 0;
 
     this._sweepRight = true;
     this._updateFrameInterval = setInterval(this.updateFrame.bind(this), this._updateDelay);
@@ -39,7 +42,7 @@ class KnightRiderLayer extends Layer {
    */
   async updateFrame() {
     if (this.updatingFrame) {
-      console.log('KnightRiderLayer.nextFrame() - Skipped Frame: already updating frame.');
+      console.log('KnightRiderLayer.updateFrame() - Skipped Frame: already updating frame.');
       return;
     }
 
@@ -47,13 +50,18 @@ class KnightRiderLayer extends Layer {
 
     this._updatingFrame = true;
     try {
-      if (this._sweepRight && this._xPos >= (this.width - 1)) {
-        this._sweepRight = false;
-      } else if (!this._sweepRight && this._xPos <= 0) {
-        this._sweepRight = true;
+      // Change Direction
+      if (this._frameNo >= (this.width)) {
+        this._sweepRight = !this._sweepRight;
+        this._frameNo = 0;
       }
 
-      this._xPos += this._sweepRight ? 1 : -1;
+      this._xPos = Math.round(easeInOutQuad(this._frameNo, 0, this.width - 1, 10));
+      if (!this._sweepRight) {
+        this._xPos = this.width - 1 - this._xPos;
+      }
+
+      this._frameNo += 1;
 
       this.render();
     } finally {
