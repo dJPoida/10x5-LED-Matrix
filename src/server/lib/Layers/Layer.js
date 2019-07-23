@@ -13,8 +13,9 @@ class Layer extends EventEmitter {
    * @constructor
    * @param {Blender} blender a reference to the layer blender
    * @param {object} [options={}] an optional set of options specific to the type of layer being instantiated
+   * @param {Effect[]} [effects=[]] an optional array of effects to apply to the layer
    */
-  constructor(blender, options) {
+  constructor(blender, options, effects) {
     super();
 
     if (!(blender instanceof Blender.constructor)) {
@@ -24,6 +25,8 @@ class Layer extends EventEmitter {
     this._blender = blender;
 
     options = options || {};
+    this._effects = effects || [];
+
     this._name = options.name || 'New Layer';
 
     this._renderStack = 0;
@@ -50,6 +53,12 @@ class Layer extends EventEmitter {
    * @type {number}
    */
   get height() { return this.blender.height; }
+
+
+  /**
+   * @type {number}
+   */
+  get numLEDs() { return this.blender.numLEDs; }
 
 
   /**
@@ -86,6 +95,14 @@ class Layer extends EventEmitter {
    * corresponding endRender().
    */
   endRender() {
+    // Is this the last "endRender?"
+    const renderingFinished = !Math.max(this._renderStack - 1, 0);
+
+    // TODO: hmm... not sure if this is the right place to apply effects
+    if (renderingFinished) {
+      this.applyEffects();
+    }
+
     const wasRendering = this.rendering;
     this._renderStack = Math.max(this._renderStack - 1, 0);
 
@@ -95,6 +112,19 @@ class Layer extends EventEmitter {
       // Notify all listeners of invalidation (if invalidated)
       this.invalidate();
     }
+  }
+
+
+  /**
+   * @description
+   * Iterate over the layer's effects and apply them accordingly
+   */
+  async applyEffects() {
+    if (!this._effects.length) return;
+
+    this._effects.forEach((effect) => {
+      this._pixelData = effect.apply(this._pixelData);
+    });
   }
 
 

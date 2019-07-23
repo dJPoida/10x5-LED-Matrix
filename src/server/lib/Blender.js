@@ -11,6 +11,8 @@ const KnightRiderLayer = require('./Layers/KnightRiderLayer');
 const GhostLayer = require('./Layers/GhostLayer');
 const PulseLayer = require('./Layers/PulseLayer');
 
+const DecayEffect = require('./Effects/DecayEffect');
+
 const BLENDER_EVENTS = require('./constants/BlenderEvents');
 const LAYER_EVENTS = require('./constants/LayerEvents');
 

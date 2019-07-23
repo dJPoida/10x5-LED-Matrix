@@ -8,9 +8,10 @@ class TestPatternLayer extends Layer {
    * @constructor
    * @param {Blender} blender a reference to the layer blender
    * @param {object} [options={}] an optional set of options specific to the type of layer being instantiated
-   */
-  constructor(blender, options) {
-    super(blender, options);
+   * @param {Effect[]} [effects=[]] an optional array of effects to apply to the layer
+  */
+  constructor(blender, options, effects) {
+    super(blender, options, effects);
 
     this.render();
   }

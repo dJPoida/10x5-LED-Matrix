@@ -8,9 +8,10 @@ class PulseLayer extends Layer {
    * @constructor
    * @param {Blender} blender a reference to the layer blender
    * @param {object} [options={}] an optional set of options specific to the type of layer being instantiated
+   * @param {Effect[]} [effects=[]] an optional array of effects to apply to the layer
    */
-  constructor(blender, options) {
-    super(blender, options);
+  constructor(blender, options, effects) {
+    super(blender, options, effects);
 
     this._color = int2rgb(options.color || 0xFFFFFF);
     this._duration = options.duration || 1000;
