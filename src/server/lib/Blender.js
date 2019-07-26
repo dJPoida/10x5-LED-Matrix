@@ -199,7 +199,8 @@ class Blender extends EventEmitter {
     // this.addLayer(new TestPatternLayer(this));
 
     // TODO: remove this test layer once the loading from config is available
-    this.addLayer(new KnightRiderLayer(this, { sweepDuration: 2000 }));
+    const knightRiderLayer = this.addLayer(new KnightRiderLayer(this, { sweepDuration: 2000 }));
+    knightRiderLayer.addEffect(new DecayEffect(knightRiderLayer));
 
     // TODO: remove this test layer once the loading from config is available
     this.addLayer(new GhostLayer(this, { color: argb2int(255, 255, 255, 0) }));

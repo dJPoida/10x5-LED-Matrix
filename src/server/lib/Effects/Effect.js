@@ -1,9 +1,12 @@
+/* eslint-disable no-unused-vars */
+
 class Effect {
+
   /**
    * @constructor
    *
-   * @param {Layer} layer
-   * @param {object} options
+   * @param {Layer} [layer=null]
+   * @param {object} [options={}]
    */
   constructor(layer, options) {
     this._layer = layer;
@@ -14,6 +17,8 @@ class Effect {
    * @type {Layer}
    */
   get layer() { return this._layer; }
+
+  set layer(value) { this._layer = value; }
 
 
   /**

@@ -38,5 +38,6 @@ module.exports = {
       'jsx-a11y/click-events-have-key-events': 0,
       'jsx-a11y/media-has-caption': 0,
       'no-bitwise': 0,
+      'no-console': 0,
     }
   };

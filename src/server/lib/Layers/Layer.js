@@ -13,9 +13,8 @@ class Layer extends EventEmitter {
    * @constructor
    * @param {Blender} blender a reference to the layer blender
    * @param {object} [options={}] an optional set of options specific to the type of layer being instantiated
-   * @param {Effect[]} [effects=[]] an optional array of effects to apply to the layer
    */
-  constructor(blender, options, effects) {
+  constructor(blender, options) {
     super();
 
     if (!(blender instanceof Blender.constructor)) {
@@ -25,7 +24,7 @@ class Layer extends EventEmitter {
     this._blender = blender;
 
     options = options || {};
-    this._effects = effects || [];
+    this._effects = [];
 
     this._name = options.name || 'New Layer';
 
@@ -193,6 +192,18 @@ class Layer extends EventEmitter {
 
       waitForUpdate();
     });
+  }
+
+
+  /**
+   * @description
+   * Add an effect to this layer
+   *
+   * @param {Effect} effect
+   */
+  addEffect(effect) {
+    effect.layer = this;
+    this._effects.push(effect);
   }
 }
 

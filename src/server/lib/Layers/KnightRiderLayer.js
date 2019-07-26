@@ -9,10 +9,9 @@ class KnightRiderLayer extends Layer {
    * @constructor
    * @param {Blender} blender a reference to the layer blender
    * @param {object} [options={}] an optional set of options specific to the type of layer being instantiated
-   * @param {Effect[]} [effects=[]] an optional array of effects to apply to the layer
    */
-  constructor(blender, options, effects) {
-    super(blender, options, effects);
+  constructor(blender, options) {
+    super(blender, options);
 
     this._sweepDuration = options.sweepDuration || 2000;
     this._color = options && options.color ? options.color : argb2int(255, 255, 0, 0);

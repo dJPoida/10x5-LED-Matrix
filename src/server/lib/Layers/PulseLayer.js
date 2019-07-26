@@ -24,7 +24,7 @@ class PulseLayer extends Layer {
     this._internalColor = 0x00000000;
     this._updateDelay = Math.round((this._duration / 2) / this._totalFrames);
 
-    console.log('Puls Layer Deets: ', {
+    console.log('Pulse Layer Deets: ', {
       color: this._color,
       duration: this._duration,
       granularity: this._granularity,

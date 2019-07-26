@@ -10,10 +10,21 @@ class DecayEffect extends Effect {
   constructor(layer, options) {
     super(layer, options);
 
+    options = options || {};
+
     this._frames = options.frames || 5;
 
-    this._frameDrop = Math.round(255 / (options.frames + 1));
+    this._frameDrop = Math.round(255 / (this.frames + 1));
   }
+
+
+  /**
+   * @description
+   * The number of frames the decay effect applies to
+   *
+   * @type {number}
+   */
+  get frames() { return this._frames; }
 
 
   /**
