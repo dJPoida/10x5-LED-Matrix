@@ -118,7 +118,7 @@ class Layer extends EventEmitter {
    * @description
    * Iterate over the layer's effects and apply them accordingly
    */
-  async applyEffects() {
+  applyEffects() {
     if (!this._effects.length) return;
 
     this._effects.forEach((effect) => {

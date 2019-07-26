@@ -1,20 +1,24 @@
 const Effect = require('./Effect');
+const multiplyAlpha = require('../../../lib/helpers/multiplyAlpha');
+const argbBlend = require('../../../lib/helpers/argbBlend');
 
 class DecayEffect extends Effect {
   /**
    * @constructor
    *
-   * @param {Layer} layer
    * @param {object} options
    */
-  constructor(layer, options) {
-    super(layer, options);
+  constructor(options) {
+    super(options);
 
     options = options || {};
 
     this._frames = options.frames || 5;
 
-    this._frameDrop = Math.round(255 / (this.frames + 1));
+    this._frameDrop = Math.max(Math.min((1 - Math.round(255 / (this.frames + 1)) / 255), 1), 0).toFixed(2);
+    console.log('frameDrop:', this._frameDrop);
+
+    this._previousPixelData = undefined;
   }
 
 
@@ -34,11 +38,16 @@ class DecayEffect extends Effect {
    * @param {Uint32Array} pixelData the pixels to apply the affect to
    */
   apply(pixelData) {
-    const newPixelData = super.apply(pixelData);
+    let returnPixelData = new Uint32Array(pixelData);
 
-    // TODO: apply the effect here
+    if (this._previousPixelData) {
+      const fadedPixelData = this._previousPixelData.map(pixel => multiplyAlpha(pixel, this._frameDrop));
+      returnPixelData = fadedPixelData.map((pixel, index) => argbBlend(pixel, pixelData[index]));
+    }
 
-    return newPixelData;
+    this._previousPixelData = new Uint32Array(returnPixelData);
+
+    return returnPixelData;
   }
 }
 

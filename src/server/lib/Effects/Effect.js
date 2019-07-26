@@ -1,24 +1,16 @@
 /* eslint-disable no-unused-vars */
+/* eslint-disable no-useless-constructor */
 
 class Effect {
 
   /**
    * @constructor
    *
-   * @param {Layer} [layer=null]
    * @param {object} [options={}]
    */
-  constructor(layer, options) {
-    this._layer = layer;
+  constructor(options) {
+    //
   }
-
-
-  /**
-   * @type {Layer}
-   */
-  get layer() { return this._layer; }
-
-  set layer(value) { this._layer = value; }
 
 
   /**

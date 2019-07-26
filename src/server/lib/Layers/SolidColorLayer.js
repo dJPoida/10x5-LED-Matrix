@@ -1,5 +1,7 @@
 const Layer = require('./Layer');
 
+const fill = require('../../../lib/helpers/fill');
+
 class SolidColorLayer extends Layer {
   /**
    * @constructor
@@ -30,9 +32,7 @@ class SolidColorLayer extends Layer {
   render() {
     this.beginRender();
     try {
-      for (let p = 0; p < this.width * this.height; p += 1) {
-        this._pixelData[p] = this._color;
-      }
+      this._pixelData = fill(this.numLEDs, this._color);
     } finally {
       this.endRender();
     }

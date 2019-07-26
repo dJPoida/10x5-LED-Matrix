@@ -2,6 +2,8 @@ const { easeInOutQuad } = require('js-easing-functions');
 const Layer = require('./Layer');
 const argb2int = require('../../../lib/helpers/argb2int');
 const int2rgb = require('../../../lib/helpers/int2rgb');
+const fill = require('../../../lib/helpers/fill');
+
 
 class PulseLayer extends Layer {
   /**
@@ -99,9 +101,7 @@ class PulseLayer extends Layer {
   render() {
     this.beginRender();
     try {
-      for (let p = 0; p < this.width * this.height; p += 1) {
-        this._pixelData[p] = this._internalColor;
-      }
+      this._pixelData = fill(this.numLEDs, this._internalColor);
     } finally {
       this.endRender();
     }
