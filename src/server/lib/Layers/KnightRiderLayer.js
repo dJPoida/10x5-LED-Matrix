@@ -1,4 +1,4 @@
-const { easeInOutQuad } = require('js-easing-functions');
+const { easeInOutSine } = require('js-easing-functions');
 
 const Layer = require('./Layer');
 const argb2int = require('../../../lib/helpers/argb2int');
@@ -19,7 +19,7 @@ class KnightRiderLayer extends Layer {
     this._xPos = 0;
 
     // Update speed is basically the number of pixels we need to traverse by the sweep duration
-    this._updateDelay = (this._sweepDuration / 2) / this.width;
+    this._updateDelay = Math.round(((this._sweepDuration / 2) / this.width) / 2);
     this._frameNo = 0;
 
     this._sweepRight = true;
@@ -51,12 +51,12 @@ class KnightRiderLayer extends Layer {
     this._updatingFrame = true;
     try {
       // Change Direction
-      if (this._frameNo >= (this.width)) {
+      if (this._frameNo >= (20)) {
         this._sweepRight = !this._sweepRight;
         this._frameNo = 0;
       }
 
-      this._xPos = Math.round(easeInOutQuad(this._frameNo, 0, this.width - 1, 10));
+      this._xPos = Math.round(easeInOutSine(this._frameNo, 0, this.width - 1, 20));
       if (!this._sweepRight) {
         this._xPos = this.width - 1 - this._xPos;
       }

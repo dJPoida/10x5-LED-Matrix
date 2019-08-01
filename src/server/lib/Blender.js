@@ -193,20 +193,21 @@ class Blender extends EventEmitter {
     this._backgroundLayer = new SolidColorLayer(this, { color: argb2int(255, 0, 0, 0) });
 
     // TODO: remove this test layer once the loading from config is available
-    this.addLayer(new PulseLayer(this, { duration: 2000, color: argb2int(255, 0, 0, 255) }));
+    this.addLayer(new PulseLayer(this, { duration: 5000, color: argb2int(255, 0, 0, 255) }));
 
     // TODO: remove this test pattern layer once the loading from the config is available
     // this.addLayer(new TestPatternLayer(this));
 
     // TODO: remove this test layer once the loading from config is available
-    const knightRiderLayer = this.addLayer(new KnightRiderLayer(this, { sweepDuration: 2000 }));
-    knightRiderLayer.addEffect(new DecayEffect(knightRiderLayer));
+    const redKnightRiderLayer = this.addLayer(new KnightRiderLayer(this, { sweepDuration: 2000 }));
+    redKnightRiderLayer.addEffect(new DecayEffect(redKnightRiderLayer));
 
     // TODO: remove this test layer once the loading from config is available
     this.addLayer(new GhostLayer(this, { color: argb2int(255, 255, 255, 0) }));
 
     // TODO: remove this test layer once the loading from config is available
-    this.addLayer(new KnightRiderLayer(this, { sweepDuration: 1500, color: argb2int(255, 0, 255, 0) }));
+    const greenKnightRiderLayer = this.addLayer(new KnightRiderLayer(this, { sweepDuration: 1500, color: argb2int(255, 0, 255, 0) }));
+    greenKnightRiderLayer.addEffect(new DecayEffect(greenKnightRiderLayer));
 
     // Let everyone know that the Layer Blender is initialised
     this.emit(BLENDER_EVENTS.INITIALISED);

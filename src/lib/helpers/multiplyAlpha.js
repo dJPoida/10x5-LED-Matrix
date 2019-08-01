@@ -11,7 +11,7 @@ const argb2int = require('./argb2int');
  */
 const multiplyAlpha = (pixelValue, multiplier) => {
   const alpha = ((pixelValue >>> 24) & 0xFF);
-  const newAlpha = Math.min(Math.max((alpha * multiplier), 0), 255);
+  const newAlpha = Math.round(Math.min(Math.max((alpha * multiplier), 0), 255));
   return argb2int(
     newAlpha,
     ((pixelValue >> 16) & 0xFF),
