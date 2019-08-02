@@ -6,31 +6,41 @@ const argbBlend = require('./argbBlend');
 
 console.log('argbBlend Test');
 
-const white_100 = {
+const white100 = {
   a: 255, r: 255, g: 255, b: 255,
 };
 
-const black_0 = {
+const black0 = {
   a: 0, r: 0, g: 0, b: 0,
 };
 
-const black_100 = {
+const black100 = {
   a: 255, r: 0, g: 0, b: 0,
 };
 
-const red_100 = {
+const red100 = {
   a: 255, r: 255, g: 0, b: 0,
 };
 
-const red_50 = {
+const red50 = {
   a: 127, r: 255, g: 0, b: 0,
 };
 
+const red25 = {
+  a: 63, r: 255, g: 0, b: 0,
+};
+
+const red10 = {
+  a: 25, r: 255, g: 0, b: 0,
+};
+
 const colorsToBlend = [
-  [black_100, red_100],
-  [white_100, red_100],
-  [white_100, red_50],
-  [black_0, red_50],
+  [black100, red100],
+  [white100, red100],
+  [white100, red50],
+  [black0, red50],
+  [black0, red25],
+  [black0, red10],
 ];
 
 console.log('=== TEST ===');

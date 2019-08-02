@@ -25,9 +25,9 @@ const argbBlend = (baseColor, addedColor) => {
   result.g = Math.round((added.g * added.a / result.a) + (base.g * base.a * (1 - added.a) / result.a)); // green
   result.b = Math.round((added.b * added.a / result.a) + (base.b * base.a * (1 - added.a) / result.a)); // blue
 
-  result.a *= 255;
+  result.a = Math.round(result.a * 255);
 
-  return argb2int(result.a, result.r, result.g, result.b);
+  return argb2int(result.a & 0xFF, result.r & 0xFF, result.g & 0xFF, result.b & 0xFF);
 };
 
 module.exports = argbBlend;
