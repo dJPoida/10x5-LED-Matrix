@@ -19,14 +19,33 @@ class EmulatedLEDMatrix extends React.Component {
     super(props);
 
     this.state = {
-      width: undefined,
-      height: undefined,
+      width: null,
+      height: null,
+      containerWidth: null,
+      containerHeight: null,
+      pixelSize: null,
       initialised: false,
       matrix: [],
       pixelRefs: [],
     };
 
+    this.containerRef = React.createRef();
+  }
+
+
+  /**
+   * @inheritdoc
+   */
+  componentWillMount() {
     this._bindEvents();
+  }
+
+
+  /**
+   * @inheritdoc
+   */
+  componentDidMount() {
+    this._updateContainerSize();
   }
 
 
@@ -38,23 +57,37 @@ class EmulatedLEDMatrix extends React.Component {
    * @param {object} newState
    */
   shouldComponentUpdate(newProps, newState) {
+    let allowRender = true;
+
     const {
       width,
       height,
+      containerWidth,
+      containerHeight,
     } = this.state;
 
     const {
       width: newWidth,
       height: newHeight,
+      containerWidth: newContainerWidth,
+      containerHeight: newContainerHeight,
     } = newState;
 
+    const containerChanged = (containerWidth !== newContainerWidth) || (containerHeight !== newContainerHeight);
+    const matrixChanged = (width !== newWidth) || (height !== newHeight);
+
     // If either of the width or height has changed, we need to re-generate the matrix
-    if (width !== newWidth || height !== newHeight) {
+    if (matrixChanged) {
       this._extrapolateMatrix(newWidth, newHeight);
-      return false;
+      allowRender = false;
     }
 
-    return true;
+    if (matrixChanged || containerChanged) {
+      this._updatePixelSize(newContainerWidth, newContainerHeight, newWidth, newHeight);
+      allowRender = false;
+    }
+
+    return allowRender;
   }
 
 
@@ -68,11 +101,35 @@ class EmulatedLEDMatrix extends React.Component {
 
   /**
    * @description
+   * Determines the client width and height of the LED Matrix Emulator client space and updates the state if required
+   */
+  _updateContainerSize = () => {
+    const { containerWidth, containerHeight } = this.state;
+    let { containerWidth: newContainerWidth, containerHeight: newContainerHeight } = this.state;
+
+    if (this.containerRef.current) {
+      newContainerWidth = this.containerRef.current.clientWidth;
+      newContainerHeight = this.containerRef.current.clientHeight;
+    }
+
+    if (containerWidth !== newContainerWidth || containerHeight !== newContainerHeight) {
+      this.setState({
+        containerWidth: newContainerWidth,
+        containerHeight: newContainerHeight,
+      });
+    }
+  }
+
+
+  /**
+   * @description
    * Bind the events required to run the component
    */
   _bindEvents = () => {
     clientSocketHandler
       .on(CLIENT_SOCKET_HANDLER_EVENTS.MESSAGE, this._handleClientSocketHandlerMessage);
+
+    window.addEventListener('resize', this._updateContainerSize);
   }
 
 
@@ -81,6 +138,8 @@ class EmulatedLEDMatrix extends React.Component {
    * Unbind the events required to run the component
    */
   _unbindEvents = () => {
+    window.removeEventListener('resize', this._updateContainerSize);
+
     clientSocketHandler
       .off(CLIENT_SOCKET_HANDLER_EVENTS.MESSAGE, this._handleClientSocketHandlerMessage);
   }
@@ -139,6 +198,30 @@ class EmulatedLEDMatrix extends React.Component {
 
   /**
    * @description
+   * Calculates the ideal size (width / height) of a pixel to fit inside the container size
+   */
+  _updatePixelSize = (containerWidth, containerHeight, width, height) => {
+    const { pixelSize } = this.state;
+
+    // How what is the maximum pixel width?
+    const maxPixelWidth = (containerWidth * 0.95) / width;
+
+    // what is the maximum pixel height
+    const maxPixelHeight = (containerHeight * 0.95) / height;
+
+    // The pixel size is the smaller of the two
+    const newPixelSize = Math.round(Math.min(maxPixelWidth, maxPixelHeight));
+
+    if (newPixelSize !== pixelSize) {
+      this.setState({
+        pixelSize: newPixelSize,
+      });
+    }
+  }
+
+
+  /**
+   * @description
    * Extrapolate the internal matrix used for rendering by multiplying the
    * width and the height. Also creates the React references required for
    * updating the DOM elements.
@@ -174,10 +257,12 @@ class EmulatedLEDMatrix extends React.Component {
    * @inheritdoc
    */
   render() {
-    const { initialised, matrix, pixelRefs } = this.state;
+    const {
+      initialised, matrix, pixelRefs, pixelSize,
+    } = this.state;
 
     return (
-      <div className="emulated-led-matrix">
+      <div className="emulated-led-matrix" ref={this.containerRef}>
         <div className="device-wrapper">
           {initialised && (
             <div className="device">
@@ -190,6 +275,10 @@ class EmulatedLEDMatrix extends React.Component {
                         ref={pixelRefs[pixel]}
                         className="device-pixel"
                         id={`pixel_${pixel}`}
+                        style={{
+                          width: pixelSize,
+                          height: pixelSize,
+                        }}
                       />
                     </div>
                   ))}

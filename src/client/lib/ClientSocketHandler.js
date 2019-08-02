@@ -155,6 +155,7 @@ class ClientSocketHandler extends events.EventEmitter {
 
   /**
    * @description
+   * Connect to the server
    */
   connect = () => {
     if (this._socket.connected) {
@@ -166,6 +167,18 @@ class ClientSocketHandler extends events.EventEmitter {
       console.log('[CSH] connect');
       this._socket.connect();
     }, 0);
+  }
+
+
+  /**
+   * @description
+   * Disconnect from the server
+   */
+  disconnect = () => {
+    if (this._socket.connected) {
+      console.log('[CSH] disconnect');
+      this._socket.disconnect();
+    }
   }
 
 

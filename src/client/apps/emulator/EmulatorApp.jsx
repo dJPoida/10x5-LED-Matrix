@@ -1,5 +1,6 @@
 import React from 'react';
 import classNames from 'classnames';
+import Switch from 'react-switch';
 
 import EmulatedLEDMatrix from '../../components/EmulatedLEDMatrix';
 import clientSocketHandler from '../../lib/ClientSocketHandler';
@@ -17,6 +18,7 @@ class EmulatorApp extends React.Component {
     super(props);
 
     this.state = {
+      emulate: false,
       fps: 0,
       connected: clientSocketHandler.connected,
     };
@@ -33,10 +35,10 @@ class EmulatorApp extends React.Component {
   componentDidMount = () => {
     this._bindEvents();
 
-    clientSocketHandler.clientRole = CLIENT_ROLE.EMULATOR;
-    clientSocketHandler.connect();
-
     this.fpsUpdateInterval = setInterval(this._calculateFPS, 1000);
+
+    clientSocketHandler.clientRole = CLIENT_ROLE.EMULATOR;
+    this.emulate(true);
   }
 
 
@@ -75,6 +77,15 @@ class EmulatorApp extends React.Component {
 
   /**
    * @description
+   * Fired whenever the user toggles the emulate switch
+   */
+  _handleChangeEmulateSwitch = (checked) => {
+    this.emulate(checked);
+  }
+
+
+  /**
+   * @description
    * Bind the event listeners this class cares about
    */
   _bindEvents = () => {
@@ -99,16 +110,49 @@ class EmulatorApp extends React.Component {
 
 
   /**
+   * @description
+   * Connect to the device to begin emulation
+   *
+   * @param {boolean} emulate whether to connect or disconnect
+   */
+  emulate = (emulate) => {
+    if (emulate && !clientSocketHandler.connected) {
+      this.setState({ emulate }, () => {
+        clientSocketHandler.connect();
+      });
+    } else if (!emulate && clientSocketHandler.connected) {
+      this.setState({ emulate }, () => {
+        clientSocketHandler.disconnect();
+      });
+    }
+  }
+
+
+  /**
    * React: Render
    */
   render() {
-    const { fps, connected } = this.state;
+    const { emulate, fps, connected } = this.state;
+
     return (
       <div className="app emulator">
         <div className="connectivity">
-          <div className={classNames('indicator', { 'disconnected': !connected, 'connected': connected })} />
-          <div className="fps">
-            <span ref={this.fpsIndicatorRef}>{`${fps} fps`}</span>
+          <div className="left">
+            <Switch onChange={this._handleChangeEmulateSwitch} checked={emulate} />
+            <div className={classNames('indicator', { 'disconnected': !connected, 'connected': connected })} />
+            <div>
+              <span>{connected ? 'Connected' : 'Disconnected'}</span>
+            </div>
+            <div className="fps">
+              <span ref={this.fpsIndicatorRef}>{`${fps} fps`}</span>
+            </div>
+          </div>
+          <div className="right">
+            <div className="app-title">
+              {/* TODO: put the app title and version details here */}
+              <span>LED Matrix</span>
+            </div>
+            <img className="app-icon" src="/img/icons/icon-512x512.png" alt="LED Matrix" />
           </div>
         </div>
         <div className="emulator-wrapper">

@@ -9,12 +9,38 @@
   margin: 0;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow: hidden;
 
   .connectivity {
     display: flex;
-    align-items: center;
-    padding: var(--universal-padding);
-    
+    justify-content: space-between;
+
+    .left,
+    .right {
+      display: flex;
+      padding: var(--universal-padding);
+      position: relative;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .left {
+      justify-content: flex-start;
+
+      >* {
+        margin-right: var(--universal-margin);
+      }
+    }
+
+    .right {
+      justify-content: flex-end;
+
+      >* {
+        margin-left: var(--universal-margin);
+      }
+    }
+
     .indicator {
       display: inline-block;
       background-color: red;
@@ -28,7 +54,20 @@
 
     .fps {
       display: inline-block;
-      margin-left: var(--universal-margin);
     }
+
+    .app-title {
+      text-align: right;
+    }
+
+    img.app-icon {
+      width: 1.5em;
+      height: 1.5em;
+    }
+  }
+
+  .emulator-wrapper {
+    position: relative;
+    flex: 1;
   }
 }
