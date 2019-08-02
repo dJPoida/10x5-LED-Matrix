@@ -18,9 +18,9 @@ class KnightRiderLayer extends Layer {
 
     this._xPos = 0;
 
-    // Update speed is basically the number of pixels we need to traverse by the sweep duration
-    this._updateDelay = Math.round(((this._sweepDuration / 2) / this.width) / 2);
     this._frameNo = 0;
+    this._maxFrames = (this.width * 4);
+    this._updateDelay = Math.round(this._sweepDuration / this._maxFrames);
 
     this._sweepRight = true;
     this._updateFrameInterval = setInterval(this.updateFrame.bind(this), this._updateDelay);
@@ -51,12 +51,12 @@ class KnightRiderLayer extends Layer {
     this._updatingFrame = true;
     try {
       // Change Direction
-      if (this._frameNo >= (20)) {
+      if (this._frameNo >= (this._maxFrames / 2)) {
         this._sweepRight = !this._sweepRight;
         this._frameNo = 0;
       }
 
-      this._xPos = Math.round(easeInOutSine(this._frameNo, 0, this.width - 1, 20));
+      this._xPos = Math.round(easeInOutSine(this._frameNo, 0, this.width - 1, (this._maxFrames / 2)));
       if (!this._sweepRight) {
         this._xPos = this.width - 1 - this._xPos;
       }

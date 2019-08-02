@@ -2,6 +2,8 @@ const Effect = require('./Effect');
 const multiplyAlpha = require('../../../lib/helpers/multiplyAlpha');
 const argbBlend = require('../../../lib/helpers/argbBlend');
 
+const DEFAULT_DECAY_FRAMES = 2;
+
 class DecayEffect extends Effect {
   /**
    * @constructor
@@ -13,7 +15,7 @@ class DecayEffect extends Effect {
 
     options = options || {};
 
-    this._frames = options.frames || 5;
+    this._frames = options.frames || DEFAULT_DECAY_FRAMES;
 
     this._frameDrop = Math.max(Math.min((1 - Math.round(255 / (this.frames + 1)) / 255), 1), 0).toFixed(2);
     console.log('frameDrop:', this._frameDrop);
