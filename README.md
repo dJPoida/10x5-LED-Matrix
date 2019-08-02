@@ -1,5 +1,5 @@
 # LED Matrix #
-Author: Peter Eldred
+Author: Peter Eldred\
 License: MIT
 
 ## TODO: ##
