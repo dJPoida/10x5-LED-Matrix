@@ -200,17 +200,17 @@ class Blender extends EventEmitter {
     // this.addLayer(new TestPatternLayer(this));
 
     // TODO: remove this test layer once the loading from config is available
-    // const redKnightRiderLayer = this.addLayer(new KnightRiderLayer(this, { sweepDuration: 2000 }));
-    // redKnightRiderLayer.addEffect(new DecayEffect(redKnightRiderLayer));
+    const redKnightRiderLayer = this.addLayer(new KnightRiderLayer(this, { sweepDuration: 2000 }));
+    redKnightRiderLayer.addEffect(new DecayEffect(redKnightRiderLayer));
 
     // TODO: remove this test layer once the loading from config is available
     // this.addLayer(new GhostLayer(this, { color: argb2int(255, 255, 255, 0) }));
 
     // TODO: remove this test layer once the loading from config is available
-    // const greenKnightRiderLayer = this.addLayer(new KnightRiderLayer(this, { sweepDuration: 1500, color: argb2int(255, 0, 255, 0) }));
-    // greenKnightRiderLayer.addEffect(new DecayEffect(greenKnightRiderLayer));
+    const greenKnightRiderLayer = this.addLayer(new KnightRiderLayer(this, { sweepDuration: 1500, color: argb2int(255, 0, 255, 0) }));
+    greenKnightRiderLayer.addEffect(new DecayEffect(greenKnightRiderLayer));
 
-    this.addLayer(new TextLayer(this));
+    this.addLayer(new TextLayer(this, { color: argb2int(255, 255, 0, 255) }));
 
     // Let everyone know that the Layer Blender is initialised
     this.emit(BLENDER_EVENTS.INITIALISED);
