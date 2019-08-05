@@ -194,7 +194,7 @@ class Blender extends EventEmitter {
     this._backgroundLayer = new SolidColorLayer(this, { color: argb2int(255, 0, 0, 0) });
 
     // TODO: remove this test layer once the loading from config is available
-    this.addLayer(new PulseLayer(this, { duration: 5000, color: argb2int(255, 0, 0, 255) }));
+    // this.addLayer(new PulseLayer(this, { duration: 5000, color: argb2int(255, 0, 0, 255) }));
 
     // TODO: remove this test pattern layer once the loading from the config is available
     // this.addLayer(new TestPatternLayer(this));
@@ -207,8 +207,8 @@ class Blender extends EventEmitter {
     // this.addLayer(new GhostLayer(this, { color: argb2int(255, 255, 255, 0) }));
 
     // TODO: remove this test layer once the loading from config is available
-    const greenKnightRiderLayer = this.addLayer(new KnightRiderLayer(this, { sweepDuration: 1500, color: argb2int(255, 0, 255, 0) }));
-    greenKnightRiderLayer.addEffect(new DecayEffect(greenKnightRiderLayer));
+    // const greenKnightRiderLayer = this.addLayer(new KnightRiderLayer(this, { sweepDuration: 1500, color: argb2int(255, 0, 255, 0) }));
+    // greenKnightRiderLayer.addEffect(new DecayEffect(greenKnightRiderLayer));
 
     this.addLayer(new TextLayer(this, { color: argb2int(255, 255, 0, 255) }));
 

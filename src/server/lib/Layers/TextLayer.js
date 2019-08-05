@@ -27,7 +27,7 @@ class TextLayer extends Layer {
   render() {
     const { _fontName } = this;
     const font = fonts[_fontName];
-    const character = 'G';
+    const character = 'A';
     const charCode = character.charCodeAt(0);
     const charData = font.characterData[charCode].d;
     const charWidth = font.characterData[charCode].width || font.width;
