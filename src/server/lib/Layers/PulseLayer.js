@@ -61,12 +61,12 @@ class PulseLayer extends Layer {
    * Calculate the next frame data
    */
   async updateFrame() {
+    await this.waitForRender();
+
     if (this.updatingFrame) {
       console.log('PulseLayer.updateFrame() - Skipped Frame: already updating frame.');
       return;
     }
-
-    await this.waitForRender();
 
     this._updatingFrame = true;
     try {
