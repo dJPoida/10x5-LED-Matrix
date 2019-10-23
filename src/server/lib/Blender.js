@@ -5,17 +5,18 @@ const argb2int = require('../../lib/helpers/argb2int');
 const argbBlend = require('../../lib/helpers/argbBlend');
 const stripAlpha = require('../../lib/helpers/stripAlpha');
 
+const Layer = require('./Layers/Layer');
 const SolidColorLayer = require('./Layers/SolidColorLayer');
 const TestPatternLayer = require('./Layers/TestPatternLayer');
 const KnightRiderLayer = require('./Layers/KnightRiderLayer');
 const GhostLayer = require('./Layers/GhostLayer');
 const PulseLayer = require('./Layers/PulseLayer');
 const TextLayer = require('./Layers/TextLayer');
-
-const DecayEffect = require('./Effects/DecayEffect');
+const ClockLayer = require('./Layers/ClockLayer');
 
 const BLENDER_EVENTS = require('./constants/BlenderEvents');
 const LAYER_EVENTS = require('./constants/LayerEvents');
+const EFFECT_TYPE = require('./constants/EffectType');
 
 
 /**
@@ -39,7 +40,6 @@ class Blender extends EventEmitter {
     this._backgroundLayer = undefined;
     this._pixelData = new Uint32Array(this.numLEDs);
     this._rendering = false;
-    this._invalidated = true;
     this._nextLayerId = 0;
     this._uniqueBlendId = 0;
 
@@ -102,12 +102,6 @@ class Blender extends EventEmitter {
 
 
   /**
-   * @type {boolean}
-   */
-  get invalidated() { return this._invalidated; }
-
-
-  /**
    * @description
    * Returns true if the layer blender is in the middle of a render
    *
@@ -143,14 +137,11 @@ class Blender extends EventEmitter {
    * Add a layer
    *
    * @param {Layer} layer
+   *
+   * @returns {Layer}
    */
   addLayer(layer) {
-    // Invalidate the blender whenever a layer is updated
-    layer.on(LAYER_EVENTS.INVALIDATED, this.invalidate.bind(this));
-
     this.layers.push(layer);
-
-    this.invalidate();
 
     return layer;
   }
@@ -176,15 +167,6 @@ class Blender extends EventEmitter {
 
   /**
    * @description
-   * Flag that the blended pixel data is no longer valid and should be re-rendered
-   */
-  invalidate() {
-    this._invalidated = true;
-  }
-
-
-  /**
-   * @description
    * Initialise the Blender
    */
   async initialise() {
@@ -194,27 +176,26 @@ class Blender extends EventEmitter {
     this._backgroundLayer = new SolidColorLayer(this, { color: argb2int(255, 0, 0, 0) });
 
     // TODO: remove this test layer once the loading from config is available
-    this.addLayer(new PulseLayer(this, { duration: 5000, color: argb2int(255, 0, 0, 255) }));
+    // this.addLayer(new PulseLayer(this, { duration: 5000, color: argb2int(255, 0, 0, 255) }));
 
     // TODO: remove this test pattern layer once the loading from the config is available
     // this.addLayer(new TestPatternLayer(this));
 
     // TODO: remove this test layer once the loading from config is available
     const redKnightRiderLayer = this.addLayer(new KnightRiderLayer(this, { sweepDuration: 2000 }));
-    redKnightRiderLayer.addEffect(new DecayEffect(redKnightRiderLayer));
+    redKnightRiderLayer.addEffect(EFFECT_TYPE.DECAY, { frames: 3 });
 
     // TODO: remove this test layer once the loading from config is available
     // this.addLayer(new GhostLayer(this, { color: argb2int(255, 255, 255, 0) }));
 
     // TODO: remove this test layer once the loading from config is available
     // const greenKnightRiderLayer = this.addLayer(new KnightRiderLayer(this, { sweepDuration: 1500, color: argb2int(255, 0, 255, 0) }));
-    // greenKnightRiderLayer.addEffect(new DecayEffect(greenKnightRiderLayer));
+    // greenKnightRiderLayer.addEffect(new DecayEffect());
 
-    this.addLayer(new TextLayer(this, {
-      color: argb2int(255, 0, 255, 0),
-      text: 'Wow! Checkout this TEXT layer! It is fully sick bruv!',
-      speed: 10,
-    }));
+    // const clockLayer = this.addLayer(new ClockLayer(this, {
+    //   color: argb2int(255, 0, 255, 0),
+    // }));
+    // clockLayer.addEffect(new DecayEffect({ frames: 2 }));
 
     // Let everyone know that the Layer Blender is initialised
     this.emit(BLENDER_EVENTS.INITIALISED);
@@ -228,9 +209,6 @@ class Blender extends EventEmitter {
    * @returns {boolean} true if the pixel data was changed
    */
   async render() {
-    // If nothing has changed then don't bother updating the pixel data
-    if (!this._invalidated) return false;
-
     // Can't render twice at the same time. Bail and warn about skipping frames.
     if (this.rendering) {
       console.warn('Skipped render: already rendering pixel data.');
@@ -244,14 +222,16 @@ class Blender extends EventEmitter {
     try {
       // TODO: This is purely for debug purposes. Prolly need to take it out at some point
       this._uniqueBlendId += 1;
-      process.stdout.write(`RENDERED UNIQUE FRAME: ${this._uniqueBlendId}`);
-      readline.cursorTo(process.stdout, 0);
+      // process.stdout.write(`RENDERED UNIQUE FRAME: ${this._uniqueBlendId}`);
+      // readline.cursorTo(process.stdout, 0);
 
       // Start with the background layer data
-      const newPixelData = new Uint32Array(await this.backgroundLayer.getPixelData());
+      const newPixelData = new Uint32Array(await this.backgroundLayer.renderFrame());
 
       // because layer.getPixelData() is async, we have to get them all using await / promises
-      const allLayersPixelData = await Promise.all(this.layers.map(layer => layer.getPixelData()));
+      const allLayersPixelData = await Promise.all(this.layers.map(layer => layer.renderFrame()));
+
+      // TODO: ok, future pete: I've determined that somehow the effects need to be rendered in each frame, NOT just when the layer determines it needs a render update. This could get heavy.
 
       // Iterate over each of the layers and blend their pixel data down into the return pixel data
       allLayersPixelData.forEach((layerPixelData) => {
@@ -271,7 +251,6 @@ class Blender extends EventEmitter {
       console.error('Blender.render() error: ', ex);
       return false;
     } finally {
-      this._invalidated = false;
       this._rendering = false;
     }
     return true;

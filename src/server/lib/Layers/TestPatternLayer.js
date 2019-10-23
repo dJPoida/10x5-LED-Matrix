@@ -11,17 +11,22 @@ class TestPatternLayer extends Layer {
   */
   constructor(blender, options) {
     super(blender, options);
-
-    this.render();
   }
 
 
   /**
-   * @description
-   * Render the pixel data
+   * @inheritdoc
    */
-  render() {
-    this.beginRender();
+  compose() {
+    // Can't compose twice at the same time. Bail and warn about skipping.
+    if (this.composing) {
+      console.warn(`${this.name}: Skipped compose() - already composing pixel data.`);
+      return;
+    }
+
+    if (!this.invalidated) return;
+
+    this.beginComposing();
     try {
       // Top Left Pixel: RED
       this.setPixel(0, 0, argb2int(255, 255, 0, 0));
@@ -39,7 +44,7 @@ class TestPatternLayer extends Layer {
       this.setPixel(1, this.height - 2, argb2int(128, 255, 255, 255));
       this.setPixel(0, this.height - 1, argb2int(255, 255, 255, 255));
     } finally {
-      this.endRender();
+      this.endComposing();
     }
   }
 }

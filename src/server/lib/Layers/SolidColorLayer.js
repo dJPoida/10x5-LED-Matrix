@@ -12,7 +12,6 @@ class SolidColorLayer extends Layer {
     super(blender, options);
 
     this._color = options.color || 0x00000000;
-    this.render();
   }
 
 
@@ -22,19 +21,26 @@ class SolidColorLayer extends Layer {
    */
   get color() { return this._color; }
 
-  set color(value) { this._color = value; this.render(); }
+  set color(value) { this._color = value; this.invalidate(); }
 
 
   /**
-   * @description
-   * Render the solid colour to the pixel data
+   * @inheritdoc
    */
-  render() {
-    this.beginRender();
+  compose() {
+    // Can't compose twice at the same time. Bail and warn about skipping.
+    if (this.composing) {
+      console.warn(`${this.name}: Skipped compose() - already composing pixel data.`);
+      return;
+    }
+
+    if (!this.invalidated) return;
+
+    this.beginComposing();
     try {
       this._pixelData = fill(this.numLEDs, this._color);
     } finally {
-      this.endRender();
+      this.endComposing();
     }
   }
 }

@@ -15,6 +15,8 @@ class PulseLayer extends Layer {
   constructor(blender, options, effects) {
     super(blender, options, effects);
 
+    this._updatingData = false;
+
     this._color = int2rgb(options.color || 0xFFFFFF);
     this._duration = options.duration || 1000;
     this._granularity = options.granularity || 16;
@@ -34,7 +36,7 @@ class PulseLayer extends Layer {
       updateDelay: this._updateDelay,
     });
 
-    this._updateFrameInterval = setInterval(this.updateFrame.bind(this), this._updateDelay);
+    this._updateDataInterval = setInterval(this.updateData.bind(this), this._updateDelay);
   }
 
 
@@ -44,7 +46,7 @@ class PulseLayer extends Layer {
    */
   get color() { return this._color; }
 
-  set color(value) { this._color = value; this.render(); }
+  set color(value) { this._color = value; this.invalidate(); }
 
 
   /**
@@ -53,30 +55,29 @@ class PulseLayer extends Layer {
    *
    * @type {boolean}
    */
-  get updatingFrame() { return this._updatingFrame; }
+  get updatingData() { return this._updatingData; }
 
 
   /**
    * @description
    * Calculate the next frame data
    */
-  async updateFrame() {
-    await this.waitForRender();
+  async updateData() {
+    await this.waitForComposition();
 
-    if (this.updatingFrame) {
-      console.log('PulseLayer.updateFrame() - Skipped Frame: already updating frame.');
+    if (this.updatingData) {
+      console.log('PulseLayer.updateData() - Skipped Frame: already updating frame.');
       return;
     }
 
-    this._updatingFrame = true;
+    this._updatingData = true;
     try {
-      // Change The Opacity
-
       if (this._frameNo > this._totalFrames) {
         this._frameNo = 0;
         this._pulseDirection = !this._pulseDirection;
       }
 
+      // Change The Opacity
       let opacity = Math.round(easeInOutQuad(this._frameNo, 0, 255, this._totalFrames));
       if (!this._pulseDirection) {
         opacity = 255 - opacity;
@@ -87,23 +88,30 @@ class PulseLayer extends Layer {
 
       this._frameNo += 1;
 
-      this.render();
+      this.invalidate();
     } finally {
-      this._updatingFrame = false;
+      this._updatingData = false;
     }
   }
 
 
   /**
-   * @description
-   * Render the solid colour to the pixel data
+   * @inheritdoc
    */
-  render() {
-    this.beginRender();
+  compose() {
+    // Can't compose twice at the same time. Bail and warn about skipping.
+    if (this.composing) {
+      console.warn(`${this.name}: Skipped compose() - already composing pixel data.`);
+      return;
+    }
+
+    if (!this.invalidated) return;
+
+    this.beginComposing();
     try {
       this._pixelData = fill(this.numLEDs, this._internalColor);
     } finally {
-      this.endRender();
+      this.endComposing();
     }
   }
 }

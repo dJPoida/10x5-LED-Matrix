@@ -2,7 +2,7 @@ const argb2int = require('./argb2int');
 
 /**
  * @description
- * Aultiplys the alpha value of a pixel by a number. Limits the output to 0-255.
+ * Multiplies the alpha value of a pixel by a number. Limits the output to 0-255.
  *
  * @param {number} pixelValue a 32bit integer containing alpha, red, green and blue data
  * @param {number} multiplier a number to multiply the pixel's alpha value by

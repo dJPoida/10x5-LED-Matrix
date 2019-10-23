@@ -1,19 +1,40 @@
 {
     "editor.formatOnSave": false,
     "eslint.autoFixOnSave": true,
-    "editor.tabSize": 2,
-    "todo-tree.flat": true,
-    "todo-tree.tags": [
-      "TODO",
-      "@TODO",
-      "@todo",
-      "@Todo",
-      "@deprecated",
-      "@test",
-      "@note",
-      "@Note"
-    ],
-    "todo-tree.regex": "((//|#|<!--|;|/\\*|\\*|^)\\s*($TAGS)|^\\s*- \\[ \\])",
-    "todo-tree.grouped": false,
+    "editor.tabSize": 2,    
     "eslint.enable": true,
+    "todo-tree.general.tags": [
+      "todo",
+      "deprecated",
+      "test",
+      "note",
+    ],
+    "todo-tree.highlights.defaultHighlight": {
+      "background": "#161616",
+      "foreground": "yellow",
+      "type": true
+    },  
+    "todo-tree.highlights.customHighlight": {
+      "todo": {},
+      "deprecated": {
+        "background": "#161616",
+        "foreground": "red"
+      },
+      "test": {
+        "background": "#161616",
+        "foreground": "green"
+      },
+      "note": {
+        "background": "#161616",
+        "foreground": "fuchsia"
+      }
+    },
+    "todo-tree.regex.regexCaseSensitive": false,
+    "todo-tree.regex.regex": "((//|#|<!--|;|/\\*|\\*|^)\\s*(@)*($TAGS)|^\\s*- \\[ \\])",
+    "todo-tree.tree.flat": true,
+    "todo-tree.tree.grouped": true,
+    "todo-tree.tree.showCountsInTree": true,
+    "todo-tree.tree.showScanOpenFilesOrWorkspaceButton": true,
+    "todo-tree.general.revealBehaviour": "start of line",
+    "todo-tree.filtering.excludeGlobs": ["**/dist/*"]
 }

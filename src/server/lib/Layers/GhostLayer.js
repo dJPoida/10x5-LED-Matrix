@@ -11,8 +11,6 @@ class MonoPixelMapLayer extends Layer {
     super(blender, options, effects);
 
     this._color = options.color || 0x00000000;
-
-    this.render();
   }
 
 
@@ -22,15 +20,14 @@ class MonoPixelMapLayer extends Layer {
    */
   get color() { return this._color; }
 
-  set color(value) { this._color = value; this.render(); }
+  set color(value) { this._color = value; this.invalidate(); }
 
 
   /**
-   * @description
-   * Render the solid colour to the pixel data
+   * @inheritdoc
    */
-  render() {
-    this.beginRender();
+  compose() {
+    this.beginComposing();
     try {
       this.setPixel(3, 0, this.color);
       this.setPixel(4, 0, this.color);
@@ -62,7 +59,7 @@ class MonoPixelMapLayer extends Layer {
       this.setPixel(7, 4, this.color);
 
     } finally {
-      this.endRender();
+      this.endComposing();
     }
   }
 }

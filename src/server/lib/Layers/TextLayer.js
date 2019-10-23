@@ -28,23 +28,22 @@ class TextLayer extends Layer {
     this._characterSpacing = options && options.characterSpacing && typeof options.characterSpacing === 'number' ? options.characterSpacing : 1;
     this._speed = options && options.speed && typeof options.speed === 'number' ? options.speed : 10;
 
-
     this._textDataWidth = 0;
     this._textDataHeight = 0;
     this._textData = new Uint32Array(0);
 
     this._xPos = -this.width;
     this._updateDelay = Math.round(1000 / this.speed);
-    this._updateFrameInterval = setInterval(this.updateFrame.bind(this), this._updateDelay);
+    this._updateDataInterval = setInterval(this.updateData.bind(this), this._updateDelay);
 
     this.updateText();
-    this.updateFrame();
+    this.updateData();
   }
 
 
   /**
    * @description
-   * Returns true if the cached text data is being updated (not the render)
+   * Returns true if the cached text data is being updated (not the composition or data)
    *
    * @type {boolean}
    */
@@ -52,11 +51,11 @@ class TextLayer extends Layer {
 
   /**
    * @description
-   * Returns true if the frame data is being updated (not the render)
+   * Returns true if the layer data is being updated
    *
    * @type {boolean}
    */
-  get updatingFrame() { return this._updatingFrame; }
+  get updatingData() { return this._updatingData; }
 
   /**
    * @type {string}
@@ -86,14 +85,14 @@ class TextLayer extends Layer {
 
   /**
    * @description
-   * Render out the text data so that the main render only has to transfer
+   * update the text so that the main composition only has to transfer
    * pixel data from the text data to the pixel data
    */
   async updateText() {
-    await this.waitForRender();
+    await this.waitForComposition();
 
     if (this.updatingText) {
-      console.log('TextLayer.updateText() - Skipped Frame: already updating frame.');
+      console.log('TextLayer.updateText() - Skipped: already updating text.');
       return;
     }
 
@@ -129,7 +128,7 @@ class TextLayer extends Layer {
       this._textDataHeight = textDataHeight;
       this._textData = newTextData;
 
-      this.render();
+      this.invalidate();
     } finally {
       this._updatingText = false;
     }
@@ -138,42 +137,44 @@ class TextLayer extends Layer {
 
   /**
    * @description
-   * Calculate the next frame data
+   * Calculate the next layer data
    */
-  async updateFrame() {
-    await this.waitForRender();
+  async updateData() {
+    await this.waitForComposition();
 
-    if (this.updatingFrame) {
-      console.log('TextLayer.updateFrame() - Skipped Frame: already updating frame.');
+    if (this.updatingData) {
+      console.warn('TextLayer.updateData() - Skipped: already updating data.');
       return;
     }
 
-    this._updatingFrame = true;
+    this._updatingData = true;
     try {
       this._xPos += 1;
       if (this._xPos > this._textDataWidth) {
         this._xPos = -this.width;
       }
 
-      this.render();
+      // Let the next composition know we have changed the basis of the pixel data and it needs to be updated
+      this.invalidate();
     } finally {
-      this._updatingFrame = false;
+      this._updatingData = false;
     }
   }
 
 
   /**
-   * @description
-   * Render the pixel data
+   * @inheritdoc
    */
-  render() {
-    // Can't render twice at the same time. Bail and warn about skipping frames.
-    if (this.rendering) {
-      console.warn('TextLayer: Skipped render - already rendering pixel data.');
+  compose() {
+    // Can't compose twice at the same time. Bail and warn about skipping.
+    if (this.composing) {
+      console.warn(`${this.name}: Skipped compose() - already composing pixel data.`);
       return;
     }
 
-    this.beginRender();
+    if (!this.invalidated) return;
+
+    this.beginComposing();
     try {
       const {
         _textData, _textDataWidth, _textDataHeight, _xPos,
@@ -188,7 +189,7 @@ class TextLayer extends Layer {
         }
       }
     } finally {
-      this.endRender();
+      this.endComposing();
     }
   }
 

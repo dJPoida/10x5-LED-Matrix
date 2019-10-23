@@ -13,6 +13,8 @@ class KnightRiderLayer extends Layer {
   constructor(blender, options) {
     super(blender, options);
 
+    this._updatingData = false;
+
     this._sweepDuration = options.sweepDuration || 2000;
     this._color = options && options.color ? options.color : argb2int(255, 255, 0, 0);
 
@@ -23,7 +25,7 @@ class KnightRiderLayer extends Layer {
     this._updateDelay = Math.round(this._sweepDuration / this._maxFrames);
 
     this._sweepRight = true;
-    this._updateFrameInterval = setInterval(this.updateFrame.bind(this), this._updateDelay);
+    this._updateDataInterval = setInterval(this.updateData.bind(this), this._updateDelay);
   }
 
 
@@ -33,55 +35,60 @@ class KnightRiderLayer extends Layer {
    *
    * @type {boolean}
    */
-  get updatingFrame() { return this._updatingFrame; }
+  get updatingData() { return this._updatingData; }
 
 
   /**
    * @description
    * Calculate the next frame data
    */
-  async updateFrame() {
-    await this.waitForRender();
+  async updateData() {
+    await this.waitForComposition();
 
-    if (this.updatingFrame) {
-      console.log('KnightRiderLayer.updateFrame() - Skipped Frame: already updating frame.');
+    if (this.updatingData) {
+      console.log('KnightRiderLayer.updateData() - Skipped: already updating data.');
       return;
     }
 
-    this._updatingFrame = true;
+    this._updatingData = true;
     try {
+      const oldXpos = this._xPos;
+
       // Change Direction
       if (this._frameNo >= (this._maxFrames / 2)) {
         this._sweepRight = !this._sweepRight;
         this._frameNo = 0;
       }
 
-      this._xPos = Math.round(easeInOutSine(this._frameNo, 0, this.width - 1, (this._maxFrames / 2)));
+      this._xPos = Math.round(easeInOutSine(this._frameNo, 0, (this.width * 2) - 1, (this._maxFrames / 2)) / 2);
       if (!this._sweepRight) {
         this._xPos = this.width - 1 - this._xPos;
       }
 
       this._frameNo += 1;
 
-      this.render();
+      if (this._xPos !== oldXpos) {
+        this.invalidate();
+      }
     } finally {
-      this._updatingFrame = false;
+      this._updatingData = false;
     }
   }
 
 
   /**
-   * @description
-   * Render the pixel data
+   * @inheritdoc
    */
-  render() {
-    // Can't render twice at the same time. Bail and warn about skipping frames.
-    if (this.rendering) {
-      console.warn('KnightRiderLayer: Skipped render - already rendering pixel data.');
+  compose() {
+    // Can't compose twice at the same time. Bail and warn about skipping.
+    if (this.composing) {
+      console.warn(`${this.name}: Skipped compose() - already composing pixel data.`);
       return;
     }
 
-    this.beginRender();
+    if (!this.invalidated) return;
+
+    this.beginComposing();
     try {
       for (let y = 0; y < this.height; y += 1) {
         for (let x = 0; x < this.width; x += 1) {
@@ -89,7 +96,7 @@ class KnightRiderLayer extends Layer {
         }
       }
     } finally {
-      this.endRender();
+      this.endComposing();
     }
   }
 
