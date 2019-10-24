@@ -8,6 +8,8 @@ const Blender = require('./Blender');
 const ServerSocketHandler = require('./ServerSocketHandler');
 const Router = require('../routes/Router');
 
+const fpsToFrameDuration = require('../../lib/helpers/fpsToFrameDuration');
+
 const KERNEL_EVENTS = require('../../lib/constants/KernelEvents');
 
 const distPath = path.resolve(__dirname, '../../../dist');
@@ -38,6 +40,8 @@ class Kernel extends EventEmitter {
     this._socketHandler = new ServerSocketHandler(this);
     this._renderInterval = undefined;
     this._rendering = false;
+    this._nextFrameRenderTime = null;
+    this._frameDuration = fpsToFrameDuration(this.config.device.fps);
 
     this._bindEvents();
 
@@ -206,8 +210,28 @@ class Kernel extends EventEmitter {
       throw new Error(`Failed to begin http server on port ${this.config.server.port}: ${ex}`);
     }
 
-    // Start the Frame Render Interval
-    this._renderInterval = setInterval(this.render.bind(this), 1000 / this.config.device.fps);
+    // Begin the Render Loop
+    this.runRenderLoop();
+  }
+
+
+  /**
+   * @description
+   * This is the main render loop of the application which is responsible
+   * for waiting the appropriate amount of time for each render.
+   */
+  runRenderLoop() {
+    // Has the current time exceeded the time the next frame is supposed to render?
+    if (!this._nextFrameRenderTime || (performance.now() > this._nextFrameRenderTime)) {
+      if (!this.rendering) {
+        this.render();
+      } else {
+        // Frame Overdue!
+      }
+    }
+
+    // Go again in 1ms.
+    setTimeout(this.runRenderLoop(), 1);
   }
 
 
@@ -223,6 +247,7 @@ class Kernel extends EventEmitter {
 
     // Keep track of the fact we're rendering so that we don't render twice at the same time
     this._rendering = true;
+    const renderStartTime = performance.now();
     try {
       // TODO: Turn the `|| true` here into a config variable that preserves battery or something
       if (await this.blender.render() || true) {
@@ -233,7 +258,13 @@ class Kernel extends EventEmitter {
         this.emit(KERNEL_EVENTS.FRAME_UPDATE, { pixelData });
       }
     } finally {
+      this._lastFrameRenderTimestampUs = performance.now();
+      const renderDuration = (this._lastFrameRenderTimestampUs - renderStartTime);
       this._rendering = false;
+
+      // Setup the next frame render
+      const nextRenderTime =
+      this._renderInterval = setInterval(this.render.bind(this), 1000 / this.config.device.fps);
     }
   }
 
