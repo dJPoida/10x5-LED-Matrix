@@ -36,5 +36,8 @@
     "todo-tree.tree.showCountsInTree": true,
     "todo-tree.tree.showScanOpenFilesOrWorkspaceButton": true,
     "todo-tree.general.revealBehaviour": "start of line",
-    "todo-tree.filtering.excludeGlobs": ["**/dist/*"]
+    "todo-tree.filtering.excludeGlobs": [
+      "**/dist/*"
+    ],
+    "cSpell.language": "en-gb"
 }
