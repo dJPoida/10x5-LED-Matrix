@@ -192,10 +192,10 @@ class Blender extends EventEmitter {
     // const greenKnightRiderLayer = this.addLayer(new KnightRiderLayer(this, { sweepDuration: 1500, color: argb2int(255, 0, 255, 0) }));
     // greenKnightRiderLayer.addEffect(new DecayEffect());
 
-    // const clockLayer = this.addLayer(new ClockLayer(this, {
-    //   color: argb2int(255, 0, 255, 0),
-    // }));
-    // clockLayer.addEffect(new DecayEffect({ frames: 2 }));
+    const clockLayer = this.addLayer(new ClockLayer(this, {
+      color: argb2int(255, 0, 255, 0),
+    }));
+    clockLayer.addEffect(EFFECT_TYPE.DECAY, { frames: 3 });
 
     // Let everyone know that the Layer Blender is initialised
     this.emit(BLENDER_EVENTS.INITIALISED);
@@ -206,16 +206,21 @@ class Blender extends EventEmitter {
    * @description
    * Blend all of the layers and update the internal pixelData array
    *
-   * @returns {boolean} true if the pixel data was changed
+   * @returns {{
+   *  pixelData: Uint32Array
+   *  layerRenderDurations: {}
+   *  error: string | null,
+   * }} the rendered pixel data
    */
   async render() {
-    // Can't render twice at the same time. Bail and warn about skipping frames.
-    if (this.rendering) {
-      console.warn('Skipped render: already rendering pixel data.');
-      return false;
-    }
-
     // TODO: log and broadcast the time taken to blend so we can avoid over complicated renders
+    if (this.rendering) {
+      return {
+        pixelData: null,
+        layerRenderDurations: {},
+        error: 'Blender.render() - rendering already in progress. Skipped.',
+      };
+    }
 
     // Prevent anyone from accessing the pixel data while we're updating it
     this._rendering = true;
@@ -249,11 +254,22 @@ class Blender extends EventEmitter {
 
     } catch (ex) {
       console.error('Blender.render() error: ', ex);
-      return false;
+
+      return {
+        pixelData: null,
+        layerRenderDurations: {},
+        error: `Blender.render() - error: ${ex}`,
+      };
+
     } finally {
       this._rendering = false;
     }
-    return true;
+
+    return {
+      pixelData: this._pixelData,
+      layerRenderDurations: {}, // TODO:
+      error: null,
+    };
   }
 }
 

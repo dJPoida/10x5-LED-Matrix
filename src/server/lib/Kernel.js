@@ -2,6 +2,8 @@ const path = require('path');
 const express = require('express');
 const EventEmitter = require('events');
 const bodyParser = require('body-parser');
+const { performance } = require('perf_hooks');
+const readline = require('readline');
 
 const LEDDevice = require('./LEDDevice');
 const Blender = require('./Blender');
@@ -40,7 +42,7 @@ class Kernel extends EventEmitter {
     this._socketHandler = new ServerSocketHandler(this);
     this._renderInterval = undefined;
     this._rendering = false;
-    this._nextFrameRenderTime = null;
+    this._nextFrameRenderTime = 0;
     this._frameDuration = fpsToFrameDuration(this.config.device.fps);
 
     this._bindEvents();
@@ -220,52 +222,87 @@ class Kernel extends EventEmitter {
    * This is the main render loop of the application which is responsible
    * for waiting the appropriate amount of time for each render.
    */
-  runRenderLoop() {
+  async runRenderLoop() {
     // Has the current time exceeded the time the next frame is supposed to render?
-    if (!this._nextFrameRenderTime || (performance.now() > this._nextFrameRenderTime)) {
+    if (performance.now() > this._nextFrameRenderTime) {
       if (!this.rendering) {
-        this.render();
+        // Before we start rendering this layer, determine when the next frame should be rendered.
+        this._nextFrameRenderTime = performance.now() + this._frameDuration;
+
+        // Render the frame
+        const renderResult = await this.render();
+
+        const frameRenderDuration = ((renderResult && renderResult.stats.renderDuration) || this._frameDuration);
+        const complexity = (frameRenderDuration / this._frameDuration);
+        const theoreticalFrameRate = (1000 / frameRenderDuration);
+
+        process.stdout.write(`Frame Render Duration: ${frameRenderDuration.toFixed(3)}ms (Complexity: ${(complexity * 100).toFixed(2)}%) (MaxFPS: ${theoreticalFrameRate.toFixed(2)}fps)`);
+        readline.cursorTo(process.stdout, 0);
       } else {
         // Frame Overdue!
+        // TODO: what to do here?
       }
     }
 
-    // Go again in 1ms.
-    setTimeout(this.runRenderLoop(), 1);
+    // Check again in 1ms. (reduce this to 0 to get the best performance. 1ms gives us some CPU respite)
+    setTimeout(this.runRenderLoop.bind(this), 1);
   }
 
 
   /**
    * @description
    * Re-draws the frame based on the current display buffer
+   *
+   * @returns {{
+   *  pixelData: Uint32Array,
+   *  stats: {
+   *    renderDuration: number,
+   *    layerRenderDurations: {},
+   *  }
+   * }}
    */
   async render() {
-    if (this.rendering) {
-      console.warn('skipped frame');
-      return;
-    }
+    // Don't allow another render to start while this render is in motion
+    if (this.rendering) return {};
 
     // Keep track of the fact we're rendering so that we don't render twice at the same time
     this._rendering = true;
+
+    // Log the start time
     const renderStartTime = performance.now();
+    let blenderResult;
+    let renderDuration;
+    let result;
     try {
-      // TODO: Turn the `|| true` here into a config variable that preserves battery or something
-      if (await this.blender.render() || true) {
-        // Get the pixel data from the blender (on its own terms)
-        const pixelData = await this.blender.getPixelData();
+      // Get the pixel data from the blender
+      blenderResult = await this.blender.render();
+
+      // Keep track of the time this frame render finished
+      renderDuration = (performance.now() - renderStartTime);
+
+      // TODO: keep some kind of average frame rate
+
+      // Was there an error?
+      if (blenderResult.error) {
+        // TODO: what to do with the blender errors?
+      } else {
+        result = {
+          pixelData: blenderResult.pixelData,
+          stats: {
+            renderDuration,
+            layerRenderDurations: blenderResult.layerRenderDurations,
+          },
+        };
 
         // Notify anything that cares about the frame data
-        this.emit(KERNEL_EVENTS.FRAME_UPDATE, { pixelData });
+        this.emit(KERNEL_EVENTS.FRAME_UPDATE, result);
       }
-    } finally {
-      this._lastFrameRenderTimestampUs = performance.now();
-      const renderDuration = (this._lastFrameRenderTimestampUs - renderStartTime);
-      this._rendering = false;
 
-      // Setup the next frame render
-      const nextRenderTime =
-      this._renderInterval = setInterval(this.render.bind(this), 1000 / this.config.device.fps);
+    } finally {
+      this._rendering = false;
     }
+
+    return result;
   }
 
 
