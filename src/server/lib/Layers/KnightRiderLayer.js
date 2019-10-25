@@ -1,27 +1,30 @@
 const { easeInOutSine } = require('js-easing-functions');
 
+// eslint-disable-next-line no-unused-vars
+const Scene = require('../Scene');
 const Layer = require('./Layer');
 const argb2int = require('../../../lib/helpers/argb2int');
+const multiplyAlpha = require('../../../lib/helpers/multiplyAlpha');
 
 class KnightRiderLayer extends Layer {
 
   /**
    * @constructor
-   * @param {Blender} blender a reference to the layer blender
+   * @param {Scene} scene a reference to the layer scene
    * @param {object} [options={}] an optional set of options specific to the type of layer being instantiated
    */
-  constructor(blender, options = {}) {
-    super(blender, options);
+  constructor(scene, options = {}) {
+    super(scene, options);
 
     this._updatingData = false;
 
     this._sweepDuration = options.sweepDuration || 2000;
-    this._color = options && options.color ? options.color : argb2int(255, 255, 0, 0);
+    this._color = options.color ? options.color : argb2int(255, 255, 0, 0);
 
     this._xPos = 0;
 
     this._frameNo = 0;
-    this._maxFrames = (this.width * 4);
+    this._maxFrames = this.width * 16;
     this._updateDelay = Math.round(this._sweepDuration / this._maxFrames);
 
     this._sweepRight = true;
@@ -60,7 +63,7 @@ class KnightRiderLayer extends Layer {
         this._frameNo = 0;
       }
 
-      this._xPos = Math.round(easeInOutSine(this._frameNo, 0, (this.width * 2) - 1, (this._maxFrames / 2)) / 2);
+      this._xPos = Math.max(0, Math.min(this.width - 1, easeInOutSine(this._frameNo, 0, (this.width * 2) - 1, (this._maxFrames / 2)) / 2));
       if (!this._sweepRight) {
         this._xPos = this.width - 1 - this._xPos;
       }
@@ -90,10 +93,21 @@ class KnightRiderLayer extends Layer {
 
     this.beginComposing();
     try {
+      // The knight rider layer blends between two pixels.
+      // an X value of 0 renders entirely into pixel 0
+      // an x value of 0.5 renders at 50% into pixel 0 and 50% into pixel 1
+      // an x value of 0.8 renders at 20% into pixel 1 and 80% into pixel 2
+
+      const x = Math.floor(this._xPos);
+      const x1 = this._xPos % 1;
+      const x2 = 1 - x1;
+      // console.log(this._xPos, x, x1.toFixed(2), x2.toFixed(2));
+
+      this._pixelData = (new Uint32Array(this.numLEDs)).fill(0x00000000);
+
       for (let y = 0; y < this.height; y += 1) {
-        for (let x = 0; x < this.width; x += 1) {
-          this._pixelData[(y * this.width) + x] = this._xPos === x ? this._color : 0x00000000;
-        }
+        this._pixelData[(y * this.width) + x] = multiplyAlpha(this._color, x2);
+        this._pixelData[(y * this.width) + x + 1] = multiplyAlpha(this._color, x1);
       }
     } finally {
       this.endComposing();

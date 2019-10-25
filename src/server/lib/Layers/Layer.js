@@ -139,19 +139,19 @@ class Layer extends EventEmitter {
 
   /**
    * @description
-   * Iterate over the layer's effects and apply them accordingly
+   * Iterate over the layer's effects and render them accordingly
    *
    * @param {Uint32Array} pixelData the pixel data to use as the source for the effects
    *
    * @returns {Uint32Array} the affected pixel data
    */
-  applyEffects(pixelData) {
+  renderEffects(pixelData) {
     // TODO: effects should not interfere with the source pixel data
     if (!this._effects.length) return pixelData;
 
     let affectedPixelData = new Uint32Array(pixelData);
     this._effects.forEach((effect) => {
-      affectedPixelData = effect.apply(affectedPixelData);
+      affectedPixelData = effect.render(affectedPixelData);
     });
 
     return affectedPixelData;
@@ -252,7 +252,7 @@ class Layer extends EventEmitter {
       }
 
       // Apply the effects on every render based on the last updated _pixelData
-      renderedPixelData = this.applyEffects(this._pixelData);
+      renderedPixelData = this.renderEffects(this._pixelData);
     } finally {
       this._renderingFrame = false;
     }

@@ -156,13 +156,14 @@ class Kernel extends EventEmitter {
             name: 'Red Knight Rider Layer',
             type: LAYER_TYPE.KNIGHT_RIDER,
             options: {
-              sweepDuration: 2000,
+              sweepDuration: 3000,
             },
             effects: [
               {
                 type: EFFECT_TYPE.DECAY,
                 options: {
-                  frames: 3,
+                  alphaOffset: 0.5,
+                  duration: 500,
                 },
               },
             ],
@@ -180,7 +181,8 @@ class Kernel extends EventEmitter {
               {
                 type: EFFECT_TYPE.DECAY,
                 options: {
-                  frames: 10,
+                  alphaOffset: 0.9,
+                  duration: 500,
                 },
               },
             ],

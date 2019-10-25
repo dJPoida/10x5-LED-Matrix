@@ -1,8 +1,11 @@
+const { performance } = require('perf_hooks');
+
 const Effect = require('./Effect');
-const multiplyAlpha = require('../../../lib/helpers/multiplyAlpha');
+const addAlpha = require('../../../lib/helpers/addAlpha');
 const argbBlend = require('../../../lib/helpers/argbBlend');
 
-const DEFAULT_DECAY_FRAMES = 2;
+const DEFAULT_DECAY_DURATION_MS = 500;
+const DEFAULT_ALPHA_OFFSET = 0.2;
 
 class DecayEffect extends Effect {
 
@@ -10,72 +13,53 @@ class DecayEffect extends Effect {
    * @constructor
    *
    * @param {Layer} layer the layer that owns the effect
-   * @param {object} [options={}]
+   * @param {object} [options={
+   *  duration: number,
+   *  alphaOffset: number
+   * }]
    */
   constructor(layer, options = {}) {
     super(layer, options);
 
     options = options || {};
 
-    this._frames = options.frames || DEFAULT_DECAY_FRAMES;
+    this._duration = Math.max(options.duration || 0, 0) || DEFAULT_DECAY_DURATION_MS;
+    this._alphaOffset = Math.max(options.alphaOffset || 0) || DEFAULT_ALPHA_OFFSET;
 
-    // Create an array of frame buffers for blending later
-    this._frameBuffers = Array(this.frames);
-    // Initialise each of the frame buffers
-    for (let i = 0; i < this.frames; i += 1) {
-      this.frameBuffers[i] = new Uint32Array(this.layer.numLEDs);
-    }
-    this._currentBuffer = -1;
-
-    // this._frameDrop = Math.max(Math.min((1 - Math.round(255 / (this.frames + 1)) / 255), 1), 0).toFixed(2);
-    // console.log('frameDrop:', this._frameDrop);
-
-    // this._previousPixelData = undefined;
+    this._previousRenderTimeStamp = performance.now();
+    this._previousPixelData = (new Uint32Array(layer.numLEDs)).fill(0x00000000);
   }
 
 
   /**
    * @description
-   * The number of frames the decay effect applies to
+   * Render the affect onto the incoming pixel data
    *
-   * @type {number}
+   * @param {Uint32Array} pixelData the pixels to apply the affect to
    */
-  get frames() { return this._frames; }
+  render(pixelData) {
+    let returnPixelData = new Uint32Array(pixelData);
 
+    // A pixel must decay from opacity 1 to opacity 0 in the specified duration.
 
-  /**
-   * @description
-   * An array of Uint32Array pixel data frame buffers
-   *
-   * @type {Uint32Array[]}
-   */
-  get frameBuffers() { return this._frameBuffers; }
+    // Therefore we can take the time since the last render and divide that by the target duration,
+    // then use that as the multiplier to determine how much the current frame should have faded
+    const newRenderTimestamp = performance.now();
+    const tDelta = newRenderTimestamp - this._previousRenderTimeStamp;
 
+    // Reduce the alpha of the previous pixel data (i.e. apply the "decay")
+    const alphaDrop = Math.round((tDelta / this._duration) * 255);
+    const decayedPixelData = this._previousPixelData.map(pixel => addAlpha(pixel, -alphaDrop));
 
-  /**
-   * @inheritdoc
-   */
-  apply(pixelData) {
-    let returnPixelData = new Uint32Array(this.layer.numLEDs);
+    // Overlay the new pixel data at the alpha offset and store it for next time
+    this._previousPixelData = decayedPixelData.map((pixel, index) => argbBlend(pixel, (
+      (this._alphaOffset > 0) ? addAlpha(pixelData[index], -(255 * this._alphaOffset)) : pixelData[index]
+    )));
 
-    // Determine the next frame buffer
-    this._currentBuffer += 1;
-    if (this._currentBuffer >= this._frames) this._currentBuffer = 0;
+    // Apply the incoming pixel data over the top of the decayed pixel data at full opacity so it doesn't interfere with the display
+    returnPixelData = decayedPixelData.map((pixel, index) => argbBlend(pixel, pixelData[index]));
 
-    // Initialize the current buffer to contain the new Pixel Data
-    this.frameBuffers[this._currentBuffer] = new Uint32Array(pixelData);
-
-    // iterate over the frame buffers and build up a return buffer using the incremental alpha of each layer
-    for (let i = 0; i < this.frames - 1; i += 1) {
-      let targetFrameBuffer = this._currentBuffer + i;
-      if (targetFrameBuffer >= this.frames) targetFrameBuffer -= this.frames;
-
-      const alpha = (1 / this.frames).toFixed(2) * (i + 1);
-
-      returnPixelData = this.frameBuffers[targetFrameBuffer].map((pixel, index) => argbBlend(returnPixelData[index], multiplyAlpha(pixel, alpha)));
-    }
-
-    returnPixelData = this.frameBuffers[this._currentBuffer].map((pixel, index) => argbBlend(returnPixelData[index], pixel));
+    this._previousRenderTimeStamp = newRenderTimestamp;
 
     return returnPixelData;
   }
