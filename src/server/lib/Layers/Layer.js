@@ -1,29 +1,30 @@
 const EventEmitter = require('events');
 
-const Blender = require('../Blender');
+const Scene = require('../Scene');
 
-const effectTypeClassMap = require('../helpers/effectTypeClassMap');
+const effectTypeClassMap = require('../../../lib/helpers/effectTypeClassMap');
 
 const LAYER_EVENTS = require('../constants/LayerEvents');
 
 /**
  * @class Layer
+ * @abstract
  */
 class Layer extends EventEmitter {
 
   /**
    * @constructor
-   * @param {Blender} blender a reference to the layer blender
+   * @param {Scene} scene a reference to the layer scene
    * @param {object} [options={}] an optional set of options specific to the type of layer being instantiated
    */
-  constructor(blender, options) {
+  constructor(scene, options) {
     super();
 
-    if (!(blender instanceof Blender.constructor)) {
-      throw new TypeError('New Layer: `blender` parameter must be a reference to the Blender class.');
+    if (!(scene instanceof Scene.constructor)) {
+      throw new TypeError('New Layer: `scene` parameter must be a reference to a Scene class that owns the layer.');
     }
 
-    this._blender = blender;
+    this._scene = scene;
 
     options = options || {};
     this._effects = [];
@@ -41,27 +42,27 @@ class Layer extends EventEmitter {
 
 
   /**
-   * @type {Blender}
+   * @type {Scene}
    */
-  get blender() { return this._blender; }
+  get scene() { return this._scene; }
 
 
   /**
    * @type {number}
    */
-  get width() { return this.blender.width; }
+  get width() { return this.scene.width; }
 
 
   /**
    * @type {number}
    */
-  get height() { return this.blender.height; }
+  get height() { return this.scene.height; }
 
 
   /**
    * @type {number}
    */
-  get numLEDs() { return this.blender.numLEDs; }
+  get numLEDs() { return this.scene.numLEDs; }
 
 
   /**
@@ -229,7 +230,7 @@ class Layer extends EventEmitter {
 
   /**
    * @description
-   * Called every frame by the blender to apply the effects to the pixel data and return
+   * Called every frame by the scene to apply the effects to the pixel data and return
    * the pixel data for rendering to the output buffer
    *
    * @returns {Uint32Array}

@@ -10,7 +10,7 @@ class KnightRiderLayer extends Layer {
    * @param {Blender} blender a reference to the layer blender
    * @param {object} [options={}] an optional set of options specific to the type of layer being instantiated
    */
-  constructor(blender, options) {
+  constructor(blender, options = {}) {
     super(blender, options);
 
     this._updatingData = false;

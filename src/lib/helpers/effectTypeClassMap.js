@@ -1,6 +1,6 @@
 const EFFECT_TYPE = require('../constants/EffectType');
 
-const DecayEffect = require('../Effects/DecayEffect');
+const DecayEffect = require('../../server/lib/Effects/DecayEffect');
 
 const _effectTypeClassMap = {
   [EFFECT_TYPE.DECAY]: DecayEffect,

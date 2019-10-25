@@ -8,7 +8,7 @@ class SolidColorLayer extends Layer {
    * @param {Blender} blender a reference to the layer blender
    * @param {object} [options={}] an optional set of options specific to the type of layer being instantiated
    */
-  constructor(blender, options) {
+  constructor(blender, options = {}) {
     super(blender, options);
 
     this._color = options.color || 0x00000000;

@@ -15,7 +15,7 @@ class ClockLayer extends TextLayer {
    *  }
    * } [options={}] an optional set of options specific to the type of layer being instantiated
    */
-  constructor(blender, options) {
+  constructor(blender, options = {}) {
     super(blender, options);
   }
 

@@ -2,6 +2,9 @@
 Author: Peter Eldred\
 License: MIT
 
+## Installation
+
+
 ## TODO: ##
 - **LayerModifyer**: Base class of modifyers that can be applied to layers which have parameters for modifying the content of a layer. For example, MotionTweenModifyer.
 

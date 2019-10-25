@@ -6,13 +6,16 @@ const { performance } = require('perf_hooks');
 const readline = require('readline');
 
 const LEDDevice = require('./LEDDevice');
-const Blender = require('./Blender');
+const Scene = require('./Scene');
 const ServerSocketHandler = require('./ServerSocketHandler');
 const Router = require('../routes/Router');
 
 const fpsToFrameDuration = require('../../lib/helpers/fpsToFrameDuration');
+const argb2int = require('../../lib/helpers/argb2int');
 
 const KERNEL_EVENTS = require('../../lib/constants/KernelEvents');
+const LAYER_TYPE = require('../../lib/constants/LayerType');
+const EFFECT_TYPE = require('../../lib/constants/EffectType');
 
 const distPath = path.resolve(__dirname, '../../../dist');
 const clientPath = path.resolve(distPath, 'client');
@@ -38,7 +41,7 @@ class Kernel extends EventEmitter {
     this._config = config;
     this._initialised = false;
     this._ledDevice = new LEDDevice(this);
-    this._blender = new Blender(this);
+    this._Scene = new Scene(this);
     this._socketHandler = new ServerSocketHandler(this);
     this._renderInterval = undefined;
     this._rendering = false;
@@ -81,9 +84,9 @@ class Kernel extends EventEmitter {
 
 
   /**
-   * @type {Blender}
+   * @type {Scene}
    */
-  get blender() { return this._blender; }
+  get Scene() { return this._Scene; }
 
 
   /**
@@ -140,8 +143,51 @@ class Kernel extends EventEmitter {
       console.warn('\n===========================================\nWARNING: LED DEVICE HARDWARE NOT AVAILABLE!\n===========================================\n');
     }
 
-    // Initialise the Blender
-    await this.blender.initialise();
+    // TODO: eventually this needs to be loaded by the current "sequence" which should be stored in a db or json somewhere for configuration by the user
+    // Initialise the Scene
+    await this.Scene.initialise(
+      {
+        id: 'testScene',
+        name: 'Test Scene',
+        layers: [
+          // Red Knight Rider Layer
+          {
+            id: 'redKnightRiderLayer',
+            name: 'Red Knight Rider Layer',
+            type: LAYER_TYPE.KNIGHT_RIDER,
+            options: {
+              sweepDuration: 2000,
+            },
+            effects: [
+              {
+                type: EFFECT_TYPE.DECAY,
+                options: {
+                  frames: 3,
+                },
+              },
+            ],
+          },
+
+          // Clock Layer
+          {
+            id: 'clockLayer',
+            name: 'Clock Layer',
+            type: LAYER_TYPE.CLOCK,
+            options: {
+              color: argb2int(255, 0, 255, 0),
+            },
+            effects: [
+              {
+                type: EFFECT_TYPE.DECAY,
+                options: {
+                  frames: 10,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    );
 
     // Initialise the Socket Handler
     await this.socketHandler.initialise();
@@ -213,7 +259,7 @@ class Kernel extends EventEmitter {
     }
 
     // Begin the Render Loop
-    this.runRenderLoop();
+    this.renderLoop();
   }
 
 
@@ -222,7 +268,7 @@ class Kernel extends EventEmitter {
    * This is the main render loop of the application which is responsible
    * for waiting the appropriate amount of time for each render.
    */
-  async runRenderLoop() {
+  async renderLoop() {
     // Has the current time exceeded the time the next frame is supposed to render?
     if (performance.now() > this._nextFrameRenderTime) {
       if (!this.rendering) {
@@ -236,8 +282,17 @@ class Kernel extends EventEmitter {
         const complexity = (frameRenderDuration / this._frameDuration);
         const theoreticalFrameRate = (1000 / frameRenderDuration);
 
-        process.stdout.write(`Frame Render Duration: ${frameRenderDuration.toFixed(3)}ms (Complexity: ${(complexity * 100).toFixed(2)}%) (MaxFPS: ${theoreticalFrameRate.toFixed(2)}fps)`);
+        process.stdout.write(`Frame Render Duration: ${
+          frameRenderDuration.toFixed(3)
+        }ms (Complexity: ${
+          (complexity * 100).toFixed(2)
+        }%) (MaxFPS: ${
+          theoreticalFrameRate.toFixed(2)
+        }fps)`);
         readline.cursorTo(process.stdout, 0);
+
+        // Notify anything that cares about the frame data
+        this.emit(KERNEL_EVENTS.FRAME_UPDATE, renderResult);
       } else {
         // Frame Overdue!
         // TODO: what to do here?
@@ -245,7 +300,7 @@ class Kernel extends EventEmitter {
     }
 
     // Check again in 1ms. (reduce this to 0 to get the best performance. 1ms gives us some CPU respite)
-    setTimeout(this.runRenderLoop.bind(this), 1);
+    setTimeout(this.renderLoop.bind(this), 1);
   }
 
 
@@ -270,12 +325,12 @@ class Kernel extends EventEmitter {
 
     // Log the start time
     const renderStartTime = performance.now();
-    let blenderResult;
+    let renderResult;
     let renderDuration;
     let result;
     try {
-      // Get the pixel data from the blender
-      blenderResult = await this.blender.render();
+      // Get the pixel data from the Scene
+      renderResult = await this.Scene.render();
 
       // Keep track of the time this frame render finished
       renderDuration = (performance.now() - renderStartTime);
@@ -283,19 +338,16 @@ class Kernel extends EventEmitter {
       // TODO: keep some kind of average frame rate
 
       // Was there an error?
-      if (blenderResult.error) {
-        // TODO: what to do with the blender errors?
+      if (renderResult.error) {
+        // TODO: what to do with the Scene errors?
       } else {
         result = {
-          pixelData: blenderResult.pixelData,
+          pixelData: renderResult.pixelData,
           stats: {
             renderDuration,
-            layerRenderDurations: blenderResult.layerRenderDurations,
+            layerRenderDurations: renderResult.layerRenderDurations,
           },
         };
-
-        // Notify anything that cares about the frame data
-        this.emit(KERNEL_EVENTS.FRAME_UPDATE, result);
       }
 
     } finally {
@@ -320,7 +372,7 @@ class Kernel extends EventEmitter {
     };
 
     if (includePixelData) {
-      state.pixelData = await this.blender.getPixelData();
+      state.pixelData = await this.Scene.getPixelData();
     }
 
     return state;

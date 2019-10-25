@@ -39,5 +39,8 @@
     "todo-tree.filtering.excludeGlobs": [
       "**/dist/*"
     ],
-    "cSpell.language": "en-gb"
+    "cSpell.language": "en-gb",
+    "cSpell.words": [
+      "KITT"
+    ]
 }
