@@ -11,7 +11,6 @@ const ServerSocketHandler = require('./ServerSocketHandler');
 const Router = require('../routes/Router');
 
 const fpsToFrameDuration = require('../../lib/helpers/fpsToFrameDuration');
-const argb2int = require('../../lib/helpers/argb2int');
 
 const KERNEL_EVENTS = require('../../lib/constants/KernelEvents');
 const LAYER_TYPE = require('../../lib/constants/LayerType');
@@ -96,6 +95,12 @@ class Kernel extends EventEmitter {
 
 
   /**
+   * @type {number}
+   */
+  get frameDuration() { return this._frameDuration; }
+
+
+  /**
    * @description
    * Returns true if the frame is currently being rendered to the device
    *
@@ -150,13 +155,66 @@ class Kernel extends EventEmitter {
         id: 'testScene',
         name: 'Test Scene',
         layers: [
+          // Green Fill Layer
+          // {
+          //   id: 'greenFillLayer',
+          //   name: 'Green Fill Layer',
+          //   type: LAYER_TYPE.FILL,
+          //   options: {
+          //     color: 0xFF00FF00,
+          //   },
+          //   effects: [],
+          // },
+
+          // Blue Pulse Layer
+          {
+            id: 'bluePulseLayer',
+            name: 'Blue Pulse Layer',
+            type: LAYER_TYPE.PULSE,
+            options: {
+              duration: 4000,
+              color: 0x0000FF,
+            },
+            effects: [],
+          },
+
+          // Mono Pixel Map Layer
+          // {
+          //   id: 'puurpulGhost',
+          //   name: 'Purple Ghost Layer',
+          //   type: LAYER_TYPE.MONO_PIXEL_MAP,
+          //   options: {
+          //     color: 0xFFFF00FF,
+          //     pixelMapWidth: 10,
+          //     pixelMapHeight: 5,
+          //     pixelMap: [
+          //       0, 0, 0, 1, 1, 1, 1, 0, 0, 0,
+          //       0, 0, 1, 1, 1, 1, 1, 1, 0, 0,
+          //       0, 0, 1, 0, 1, 1, 0, 1, 0, 0,
+          //       0, 0, 1, 1, 1, 1, 1, 1, 0, 0,
+          //       0, 0, 1, 0, 1, 1, 0, 1, 0, 0,
+          //     ],
+          //   },
+          //   effects: [],
+          // },
+
+          // Test Pattern Layer
+          // {
+          //   id: 'testPatternLayer',
+          //   name: 'Test Pattern Layer',
+          //   type: LAYER_TYPE.TEST_PATTERN,
+          //   options: {},
+          //   effects: [],
+          // },
+
           // Red Knight Rider Layer
           {
             id: 'redKnightRiderLayer',
             name: 'Red Knight Rider Layer',
             type: LAYER_TYPE.KNIGHT_RIDER,
             options: {
-              sweepDuration: 1500,
+              duration: 2000,
+              blend: true,
             },
             effects: [
               {
@@ -170,21 +228,43 @@ class Kernel extends EventEmitter {
           },
 
           // Clock Layer
+          // {
+          //   id: 'textLayer',
+          //   name: 'Text Layer',
+          //   type: LAYER_TYPE.TEXT,
+          //   options: {
+          //     color: 0xFF00FF00,
+          //     text: 'Yowza!',
+          //     speed: 1.5,
+          //   },
+          //   effects: [
+          //     // {
+          //     //   type: EFFECT_TYPE.DECAY,
+          //     //   options: {
+          //     //     alphaOffset: 0.5,
+          //     //     duration: 500,
+          //     //   },
+          //     // },
+          //   ],
+          // },
+
+          // Clock Layer
           {
             id: 'clockLayer',
             name: 'Clock Layer',
             type: LAYER_TYPE.CLOCK,
             options: {
-              color: argb2int(255, 0, 255, 0),
+              color: 0xFF00FF00,
+              speed: 1.5,
             },
             effects: [
-              {
-                type: EFFECT_TYPE.DECAY,
-                options: {
-                  alphaOffset: 0.8,
-                  duration: 500,
-                },
-              },
+              // {
+              //   type: EFFECT_TYPE.DECAY,
+              //   options: {
+              //     alphaOffset: 0.8,
+              //     duration: 500,
+              //   },
+              // },
             ],
           },
         ],

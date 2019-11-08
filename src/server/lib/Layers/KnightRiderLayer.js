@@ -1,117 +1,149 @@
 const { easeInOutSine } = require('js-easing-functions');
+const { performance } = require('perf_hooks');
 
 // eslint-disable-next-line no-unused-vars
 const Scene = require('../Scene');
 const Layer = require('./Layer');
-const argb2int = require('../../../lib/helpers/argb2int');
+
 const multiplyAlpha = require('../../../lib/helpers/multiplyAlpha');
 
+/**
+ * @class KnightRiderLayer
+ *
+ * @description
+ * The Knight Rider Layer sweeps a single line from left to right, just like the Larson Scanner on the Kitt car.
+ *
+ * Options:
+ *  `duration` {number} default = 2000
+ *  The duration in milliseconds the sweep should take from left, to right, and back again.
+ *
+ *  `color` {number} default = 0xFFFF0000
+ *  The color of the line
+ *
+ *  `blend` {boolean} default = true
+ *  Whether to blend the line between pixels (aka anti-alias)
+ */
 class KnightRiderLayer extends Layer {
 
   /**
    * @constructor
+   *
    * @param {Scene} scene a reference to the layer scene
-   * @param {object} [options={}] an optional set of options specific to the type of layer being instantiated
+   * @param {string} [name = 'New Knight Rider Layer'] a unique name to use when identifying the layer
+   * @param {number | Layer.LAYER_STATE_UPDATE_INTERVAL_FRAME_SYNC} [layerStateUpdateInterval = Layer.LAYER_STATE_UPDATE_INTERVAL_FRAME_SYNC] how often the layer state should be updated
+   * @param {{
+   *  color: number,
+   *  duration: number,
+   *  blend: boolean,
+   * }} [options={}] an optional set of options specific to the type of layer being instantiated
    */
-  constructor(scene, options = {}) {
-    super(scene, options);
-
-    this._updatingData = false;
-
-    this._sweepDuration = options.sweepDuration || 2000;
-    this._color = options.color ? options.color : argb2int(255, 255, 0, 0);
+  constructor(scene, name = 'New Knight Rider Layer', layerStateUpdateInterval = Layer.LAYER_STATE_UPDATE_INTERVAL_FRAME_SYNC, options = {}) {
+    super(scene, name, layerStateUpdateInterval, {
+      duration: 2000,
+      color: 0xFFFF0000,
+      blend: true,
+      ...options,
+    });
 
     this._xPos = 0;
-
-    this._frameNo = 0;
-    this._maxFrames = this.width * 16;
-    this._updateDelay = Math.round(this._sweepDuration / this._maxFrames);
-
-    this._sweepRight = true;
-    this._updateDataInterval = setInterval(this.updateData.bind(this), this._updateDelay);
+    this._tweenStartTime = performance.now();
+    this._tweenDirection = true;
   }
 
 
   /**
-   * @description
-   * Returns true if the frame data is being updated (not the render)
-   *
-   * @type {boolean}
+   * @description the line color
+   * @type {number} a 32bit integer representing the ARGB value of the line color
    */
-  get updatingData() { return this._updatingData; }
+  get color() { return this.options.color; }
 
 
   /**
-   * @description
-   * Calculate the next frame data
+   * @description the duration the tween should take from in to out and back in
+   * @type {number} a millisecond value
    */
-  async updateData() {
-    await this.waitForComposition();
+  get duration() { return this.options.duration; }
 
-    if (this.updatingData) {
-      console.log('KnightRiderLayer.updateData() - Skipped: already updating data.');
-      return;
-    }
 
-    this._updatingData = true;
+  /**
+   * @description whether to blend the line as it traverses between pixels or not
+   * @type {boolean}
+   */
+  get blend() { return this.options.blend; }
+
+
+  /**
+   * @inheritDoc
+   */
+  async updateLayerState() {
+    if (!super.updateLayerState()) return false;
+
+    this.beginUpdatingLayerState();
+    let invalidated = false;
     try {
       const oldXpos = this._xPos;
 
-      // Change Direction
-      if (this._frameNo >= (this._maxFrames / 2)) {
-        this._sweepRight = !this._sweepRight;
-        this._frameNo = 0;
+      let currentTweenTimeElapsed = performance.now() - this._tweenStartTime;
+      if (currentTweenTimeElapsed > (this.duration / 2)) {
+        // Reset the duration
+        this._tweenStartTime = performance.now() - (currentTweenTimeElapsed - (this.duration / 2));
+        currentTweenTimeElapsed = performance.now() - this._tweenStartTime;
+
+        // Switch directions
+        this._tweenDirection = !this._tweenDirection;
       }
 
-      this._xPos = Math.max(0, Math.min(this.width - 1, easeInOutSine(this._frameNo, 0, (this.width * 2) - 1, (this._maxFrames / 2)) / 2));
-      if (!this._sweepRight) {
+      this._xPos = easeInOutSine(currentTweenTimeElapsed, 0, this.width - 1, (this.duration / 2)).toFixed(2);
+      if (this._tweenDirection) {
         this._xPos = this.width - 1 - this._xPos;
       }
 
-      this._frameNo += 1;
-
-      if (this._xPos !== oldXpos) {
-        this.invalidate();
-      }
+      invalidated = (this._xPos !== oldXpos);
     } finally {
-      this._updatingData = false;
+      this.endUpdatingLayerState(invalidated);
     }
+
+    return true;
   }
 
 
   /**
    * @inheritdoc
    */
-  compose() {
-    // Can't compose twice at the same time. Bail and warn about skipping.
-    if (this.composing) {
-      console.warn(`${this.name}: Skipped compose() - already composing pixel data.`);
-      return;
-    }
+  updatePixelData() {
+    if (!super.updatePixelData()) return false;
 
-    if (!this.invalidated) return;
-
-    this.beginComposing();
+    this.beginUpdatingPixelData();
     try {
-      // The knight rider layer blends between two pixels.
+      // When blending is enabled, the current _xPos is blended between two pixels.
       // an X value of 0 renders entirely into pixel 0
       // an x value of 0.5 renders at 50% into pixel 0 and 50% into pixel 1
       // an x value of 0.8 renders at 20% into pixel 1 and 80% into pixel 2
 
-      const x = Math.floor(this._xPos);
+      let x;
+      if (this.blend) {
+        x = Math.floor(this._xPos);
+      } else {
+        x = Math.round(this._xPos);
+      }
       const x1 = this._xPos % 1;
       const x2 = 1 - x1;
-      // console.log(this._xPos, x, x1.toFixed(2), x2.toFixed(2));
 
       this._pixelData = (new Uint32Array(this.numLEDs)).fill(0x00000000);
 
       for (let y = 0; y < this.height; y += 1) {
-        this._pixelData[(y * this.width) + x] = multiplyAlpha(this._color, x2);
-        this._pixelData[(y * this.width) + x + 1] = multiplyAlpha(this._color, x1);
+        if (this.blend) {
+          this._pixelData[(y * this.width) + x] = multiplyAlpha(this.color, x2);
+          this._pixelData[(y * this.width) + x + 1] = multiplyAlpha(this.color, x1);
+        } else {
+          this._pixelData[(y * this.width) + x] = this.color;
+        }
       }
     } finally {
-      this.endComposing();
+      this.endUpdatingPixelData();
     }
+
+    return true;
   }
 
 }

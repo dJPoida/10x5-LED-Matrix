@@ -1,49 +1,76 @@
+const { performance } = require('perf_hooks');
+
 const Layer = require('./Layer');
-const argb2int = require('../../../lib/helpers/argb2int');
+
 const renderFontCharacter = require('../../../lib/helpers/renderFontCharacter');
 
+/**
+ * @class TextLayer
+ *
+ * @description
+ * The text layer displays text in given font. It provides options for scrolling in various ways.
+ *
+ * Options:
+ *  `color` {number} default = 0xFFFFFFFF
+ *  The color of the text
+ *
+ *  `speed` {number} default = 1
+ *  The number of characters to scroll by per second
+ *
+ *  `fontName` {string} default = 'djpoida5x5'
+ *  The name of the font to use to display the text
+ *
+ *  `text` {string} default = 'Text Layer'
+ *  The text to display on the layer
+ *
+ *  `characterSpacing` {number} default = 1
+ *  The number of pixels to space each character by
+ *
+ *  `blend` {boolean} default = true
+ *  Whether to blend the line between pixels (aka anti-alias)
+ */
 class TextLayer extends Layer {
 
   /**
    * @constructor
-   * @param {Blender} blender a reference to the layer blender
+   * @param {Scene} scene a reference to the layer scene
+   * @param {string} [name = 'New Knight Rider Layer'] a unique name to use when identifying the layer
+   * @param {number | Layer.LAYER_STATE_UPDATE_INTERVAL_FRAME_SYNC} [layerStateUpdateInterval = null] how often the layer state should be updated
    * @param {
    *  {
    *    color: number,
-   *    fontName: string,
    *    speed: number,
+   *    fontName: string,
    *    text: string,
    *    characterSpacing: number
    *  }
    * } [options={}] an optional set of options specific to the type of layer being instantiated
    */
-  constructor(blender, options = {}) {
-    super(blender, options);
+  constructor(scene, name = 'New Text Layer', layerStateUpdateInterval = Layer.LAYER_STATE_UPDATE_INTERVAL_FRAME_SYNC, options = {}) {
+    super(scene, name, layerStateUpdateInterval, {
+      color: 0xFFFFFFFF,
+      speed: 1,
+      fontName: 'djpoida5x5',
+      text: 'Text Layer',
+      characterSpacing: 1,
+      ...options,
+    });
 
     this._updatingText = false;
-
-    this._color = options && options.color ? options.color : argb2int(255, 255, 255, 255);
-    this._fontName = options && options.fontName ? options.fontName : 'djpoida5x5';
-    this._text = options && options.text ? options.text : 'Text Layer';
-    this._characterSpacing = options && options.characterSpacing && typeof options.characterSpacing === 'number' ? options.characterSpacing : 1;
-    this._speed = options && options.speed && typeof options.speed === 'number' ? options.speed : 10;
-
     this._textDataWidth = 0;
     this._textDataHeight = 0;
     this._textData = new Uint32Array(0);
 
     this._xPos = -this.width;
-    this._updateDelay = Math.round(1000 / this.speed);
-    this._updateDataInterval = setInterval(this.updateData.bind(this), this._updateDelay);
+    this._tweenStartTime = performance.now();
 
     this.updateText();
-    this.updateData();
   }
 
 
   /**
    * @description
-   * Returns true if the cached text data is being updated (not the composition or data)
+   * Returns true if the cached text data is being updated (not the pixel data or layer state)
    *
    * @type {boolean}
    */
@@ -55,41 +82,41 @@ class TextLayer extends Layer {
    *
    * @type {boolean}
    */
-  get updatingData() { return this._updatingData; }
+  get updatingLayerData() { return this._updatingData; }
 
   /**
    * @type {string}
    */
-  get fontName() { return this._fontName; }
+  get fontName() { return this.options.fontName; }
 
   /**
    * @type {number}
    */
-  get color() { return this._color; }
+  get color() { return this.options.color; }
 
   /**
    * @type {number}
    */
-  get speed() { return this._speed; }
+  get speed() { return this.options.speed; }
 
   /**
    * @type {number}
    */
-  get characterSpacing() { return this._characterSpacing; }
+  get characterSpacing() { return this.options.characterSpacing; }
 
   /**
    * @type {string}
    */
-  get text() { return this._text; }
+  get text() { return this._options.text; }
 
 
   /**
    * @description
-   * update the text so that the main composition only has to transfer
-   * pixel data from the text data to the pixel data
+   * update the text so that the main pixel data update method only has to transfer
+   * pixel data from the text data to the output pixel data
    */
   async updateText() {
-    await this.waitForComposition();
+    await this.waitForUpdatePixelData();
 
     if (this.updatingText) {
       console.log('TextLayer.updateText() - Skipped: already updating text.');
@@ -136,45 +163,47 @@ class TextLayer extends Layer {
 
 
   /**
-   * @description
-   * Calculate the next layer data
+   * @inheritdoc
    */
-  async updateData() {
-    await this.waitForComposition();
+  async updateLayerState() {
+    if (!super.updateLayerState()) return false;
 
-    if (this.updatingData) {
-      console.warn('TextLayer.updateData() - Skipped: already updating data.');
-      return;
-    }
-
-    this._updatingData = true;
+    this.beginUpdatingLayerState();
+    let invalidated = false;
     try {
-      this._xPos += 1;
-      if (this._xPos > this._textDataWidth) {
-        this._xPos = -this.width;
+      const oldXpos = this._xPos;
+
+      // TODO: the `5` here is supposed to be the default number of pixels in the font
+      const invalidationTime = (1000 / 5 / this.speed);
+
+      let currentTweenTimeElapsed = performance.now() - this._tweenStartTime;
+      if (currentTweenTimeElapsed > invalidationTime) {
+        // Reset the duration
+        this._tweenStartTime = performance.now() - (currentTweenTimeElapsed - invalidationTime);
+        currentTweenTimeElapsed = performance.now() - this._tweenStartTime;
+
+        this._xPos += 1;
+        if (this._xPos > this._textDataWidth) {
+          this._xPos = -this.width;
+        }
       }
 
-      // Let the next composition know we have changed the basis of the pixel data and it needs to be updated
-      this.invalidate();
+      invalidated = (this._xPos !== oldXpos);
     } finally {
-      this._updatingData = false;
+      this.endUpdatingLayerState(invalidated);
     }
+
+    return true;
   }
 
 
   /**
    * @inheritdoc
    */
-  compose() {
-    // Can't compose twice at the same time. Bail and warn about skipping.
-    if (this.composing) {
-      console.warn(`${this.name}: Skipped compose() - already composing pixel data.`);
-      return;
-    }
+  updatePixelData() {
+    if (!super.updatePixelData()) return false;
 
-    if (!this.invalidated) return;
-
-    this.beginComposing();
+    this.beginUpdatingPixelData();
     try {
       const {
         _textData, _textDataWidth, _textDataHeight, _xPos,
@@ -189,8 +218,10 @@ class TextLayer extends Layer {
         }
       }
     } finally {
-      this.endComposing();
+      this.endUpdatingPixelData();
     }
+
+    return true;
   }
 
 }

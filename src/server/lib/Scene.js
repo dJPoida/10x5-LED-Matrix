@@ -1,7 +1,9 @@
 const EventEmitter = require('events');
+const { performance } = require('perf_hooks');
 
 const argbBlendLayer = require('../../lib/helpers/argbBlendLayer');
 const stripAlpha = require('../../lib/helpers/stripAlpha');
+const msToTimeCode = require('../../lib/helpers/msToTimeCode');
 
 const layerTypeClassMap = require('../../lib/helpers/layerTypeClassMap');
 
@@ -31,6 +33,8 @@ class Scene extends EventEmitter {
     this._pixelData = new Uint32Array(this.numLEDs);
     this._rendering = false;
     this._nextLayerId = 0;
+
+    this._sceneLoadedOffset = performance.now();
 
     this._bindEvents();
   }
@@ -83,6 +87,52 @@ class Scene extends EventEmitter {
 
   /**
    * @description
+   * The duration of each frame
+   *
+   * @type {number}
+   */
+  get frameDuration() { return this.kernel.frameDuration; }
+
+
+  /**
+   * @description
+   * The configured, desired FPS of the device
+   *
+   * @type {number}
+   */
+  get fps() { return this.kernel.config.device.fps; }
+
+
+  /**
+   * @description
+   * Gets the current frame (fractional) since the scene started
+   *
+   * @returns {number}
+   */
+  get currentFrame() {
+    return Math.floor((performance.now() - this._sceneLoadedOffset) / this.frameDuration);
+  }
+
+
+  /**
+   * @description
+   * Gets the current frame (fractional) since the scene started
+   *
+   * @returns {{
+   *  days: number,
+   *  hours: number,
+   *  minutes: number,
+   *  seconds: number,
+   *  frames: number,
+   * }}
+   */
+  get currentTimeCode() {
+    return msToTimeCode((performance.now() - this._sceneLoadedOffset), this.kernel.config.device.fps);
+  }
+
+
+  /**
+   * @description
    * Returns true if the layer manager is in the middle of a render
    *
    * @type {boolean}
@@ -117,16 +167,18 @@ class Scene extends EventEmitter {
    * Add a layer
    *
    * @param {LayerType} layerType
+   * @param {string} layerName
+   * @param {number | Layer.LAYER_STATE_UPDATE_INTERVAL_FRAME_SYNC} layerStateUpdateInterval
    * @param {{}} options
    *
    * @returns {Layer}
    */
-  addLayer(layerType, options) {
+  addLayer(layerType, layerName, layerStateUpdateInterval, options) {
     // Find the appropriate class based on the provided layer type
     const LayerClass = layerTypeClassMap(layerType);
 
     // instantiate the layer and pass in teh options
-    const layer = new LayerClass(this, options);
+    const layer = new LayerClass(this, layerName, layerStateUpdateInterval, options);
 
     // push the layer onto the stack
     this.layers.push(layer);
@@ -174,7 +226,7 @@ class Scene extends EventEmitter {
     if (scene && scene.layers) {
       scene.layers.forEach((layer) => {
         // Create and add the new layer
-        const newLayer = this.addLayer(layer.type, layer.options);
+        const newLayer = this.addLayer(layer.type, layer.name, layer.layerStateUpdateInterval, layer.options);
 
         // Apply any effects
         if (Array.isArray(layer.effects)) {
@@ -216,7 +268,7 @@ class Scene extends EventEmitter {
       let newPixelData = (new Uint32Array(this.numLEDs)).fill(0xFF000000);
 
       // because layer.getPixelData() is async, we have to get them all using await / promises
-      const allLayersPixelData = await Promise.all(this.layers.map(layer => layer.renderFrame()));
+      const allLayersPixelData = await Promise.all(this.layers.map(layer => layer.render()));
 
       // Iterate over each of the layers and blend it with the return pixel data
       allLayersPixelData.forEach((layerPixelData) => {

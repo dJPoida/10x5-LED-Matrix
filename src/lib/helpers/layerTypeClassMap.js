@@ -4,19 +4,19 @@ const LAYER_TYPE = require('../constants/LayerType');
 const Layer = require('../../server/lib/Layers/Layer');
 
 const ClockLayer = require('../../server/lib/Layers/ClockLayer');
-const GhostLayer = require('../../server/lib/Layers/GhostLayer');
+const MonoPixelMapLayer = require('../../server/lib/Layers/MonoPixelMapLayer');
 const KnightRiderLayer = require('../../server/lib/Layers/KnightRiderLayer');
 const PulseLayer = require('../../server/lib/Layers/PulseLayer');
-const SolidColorLayer = require('../../server/lib/Layers/SolidColorLayer');
+const FillLayer = require('../../server/lib/Layers/FillLayer');
 const TestPatternLayer = require('../../server/lib/Layers/TestPatternLayer');
 const TextLayer = require('../../server/lib/Layers/TextLayer');
 
 const _layerTypeClassMap = {
   [LAYER_TYPE.CLOCK]: ClockLayer,
-  [LAYER_TYPE.GHOST]: GhostLayer,
+  [LAYER_TYPE.MONO_PIXEL_MAP]: MonoPixelMapLayer,
   [LAYER_TYPE.KNIGHT_RIDER]: KnightRiderLayer,
   [LAYER_TYPE.PULSE]: PulseLayer,
-  [LAYER_TYPE.SOLID_COLOR]: SolidColorLayer,
+  [LAYER_TYPE.FILL]: FillLayer,
   [LAYER_TYPE.TEST_PATTERN]: TestPatternLayer,
   [LAYER_TYPE.TEXT]: TextLayer,
 };

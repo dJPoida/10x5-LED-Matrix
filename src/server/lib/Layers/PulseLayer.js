@@ -1,117 +1,105 @@
 const { easeInOutQuad } = require('js-easing-functions');
+const { performance } = require('perf_hooks');
+
+// eslint-disable-next-line no-unused-vars
+const Scene = require('../Scene');
 const Layer = require('./Layer');
-const argb2int = require('../../../lib/helpers/argb2int');
-const int2rgb = require('../../../lib/helpers/int2rgb');
-const fill = require('../../../lib/helpers/fill');
+const FillLayer = require('./FillLayer');
+
+const setAlpha = require('../../../lib/helpers/setAlpha');
 
 
-class PulseLayer extends Layer {
+/**
+ * @class PulseLayer
+ *
+ * @description
+ * The Pulse Layer pulses a single color from 0% opacity to 100% opacity.
+ *
+ * Options:
+ *  `duration` {number} default = 1000
+ *  The duration in milliseconds it should take the pulse to go from 0% to 100% and back to 0%
+ *
+ *  `color` {number} default = 0xFFFFFF
+ *  A 24bit (non alpha) color for the layer
+ */
+class PulseLayer extends FillLayer {
+
   /**
    * @constructor
-   * @param {Blender} blender a reference to the layer blender
-   * @param {object} [options={}] an optional set of options specific to the type of layer being instantiated
+   *
+   * @param {Scene} scene a reference to the layer scene
+   * @param {string} [name = 'New Pulse Layer'] a unique name to use when identifying the layer
+   * @param {number | Layer.LAYER_STATE_UPDATE_INTERVAL_FRAME_SYNC} [layerStateUpdateInterval = Layer.LAYER_STATE_UPDATE_INTERVAL_FRAME_SYNC] how often the layer state should be updated
+   * @param {{
+   *  color: number,
+   *  duration: number,
+   * }} [options={}] an optional set of options specific to the type of layer being instantiated
    */
-  constructor(blender, options = {}) {
-    super(blender, options);
-
-    this._updatingData = false;
-
-    this._color = int2rgb(options.color || 0xFFFFFF);
-    this._duration = options.duration || 1000;
-    this._granularity = options.granularity || 16;
-    this._totalFrames = (256 / this._granularity);
-
-    this._frameNo = 0;
-    this._pulseDirection = true;
-
-    this._internalColor = 0x00000000;
-    this._updateDelay = Math.round((this._duration / 2) / this._totalFrames);
-
-    console.log('Pulse Layer Deets: ', {
-      color: this._color,
-      duration: this._duration,
-      granularity: this._granularity,
-      totalFrames: this._totalFrames,
-      updateDelay: this._updateDelay,
+  constructor(scene, name = 'New Pulse Layer', layerStateUpdateInterval = Layer.LAYER_STATE_UPDATE_INTERVAL_FRAME_SYNC, options = {}) {
+    super(scene, name, layerStateUpdateInterval, {
+      duration: 2000,
+      color: 0xFFFFFF,
+      ...options,
     });
 
-    this._updateDataInterval = setInterval(this.updateData.bind(this), this._updateDelay);
+    this._opacity = 0;
+    this._internalColor = setAlpha(this.options.color, this._opacity);
+    this._tweenStartTime = performance.now();
+    this._tweenDirection = true;
   }
 
 
   /**
-   * @description the color of this solid color layer
-   * @type {number} a 32bit integer representing the ARGB value of the layer
+   * @description the current color of the layer
+   * @type {number} a 32bit integer representing the ARGB value of the color
    */
-  get color() { return this._color; }
-
-  set color(value) { this._color = value; this.invalidate(); }
+  get color() { return this._internalColor; }
 
 
   /**
-   * @description
-   * Returns true if the frame data is being updated (not the render)
-   *
-   * @type {boolean}
+   * @description the duration the tween should take from in to out and back in
+   * @type {number} a millisecond value
    */
-  get updatingData() { return this._updatingData; }
-
-
-  /**
-   * @description
-   * Calculate the next frame data
-   */
-  async updateData() {
-    await this.waitForComposition();
-
-    if (this.updatingData) {
-      console.log('PulseLayer.updateData() - Skipped Frame: already updating frame.');
-      return;
-    }
-
-    this._updatingData = true;
-    try {
-      if (this._frameNo > this._totalFrames) {
-        this._frameNo = 0;
-        this._pulseDirection = !this._pulseDirection;
-      }
-
-      // Change The Opacity
-      let opacity = Math.round(easeInOutQuad(this._frameNo, 0, 255, this._totalFrames));
-      if (!this._pulseDirection) {
-        opacity = 255 - opacity;
-      }
-
-      // TODO: turn this into a simpler opacity integer bitwise shifting function
-      this._internalColor = argb2int(opacity, this._color.r, this._color.g, this.color.b);
-
-      this._frameNo += 1;
-
-      this.invalidate();
-    } finally {
-      this._updatingData = false;
-    }
-  }
+  get duration() { return this.options.duration; }
 
 
   /**
    * @inheritdoc
    */
-  compose() {
-    // Can't compose twice at the same time. Bail and warn about skipping.
-    if (this.composing) {
-      console.warn(`${this.name}: Skipped compose() - already composing pixel data.`);
-      return;
-    }
+  async updateLayerState() {
+    if (!super.updateLayerState()) return false;
 
-    if (!this.invalidated) return;
-
-    this.beginComposing();
+    this.beginUpdatingLayerState();
+    let invalidated = false;
     try {
-      this._pixelData = fill(this.numLEDs, this._internalColor);
+      const oldOpacity = this._opacity;
+
+      let currentTweenTimeElapsed = performance.now() - this._tweenStartTime;
+      if (currentTweenTimeElapsed > (this.duration / 2)) {
+        // Reset the duration
+        this._tweenStartTime = performance.now() - (currentTweenTimeElapsed - (this.duration / 2));
+        currentTweenTimeElapsed = performance.now() - this._tweenStartTime;
+
+        // Switch directions
+        this._tweenDirection = !this._tweenDirection;
+      }
+
+      this._opacity = Math.round(easeInOutQuad(currentTweenTimeElapsed, 0, 255, (this.duration / 2)));
+      if (!this._tweenDirection) {
+        this._opacity = 255 - this._opacity;
+      }
+
+      invalidated = (this._opacity !== oldOpacity);
+
+      // Don't bother re-calculating the internal color unless the opacity has changed
+      if (invalidated) {
+        this._internalColor = setAlpha(this.options.color, this._opacity);
+      }
     } finally {
-      this.endComposing();
+      this.endUpdatingLayerState(invalidated);
     }
+
+    return true;
   }
 }
 
