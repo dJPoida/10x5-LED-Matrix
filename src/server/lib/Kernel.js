@@ -255,7 +255,7 @@ class Kernel extends EventEmitter {
             type: LAYER_TYPE.CLOCK,
             options: {
               color: 0xFF00FF00,
-              speed: 1.5,
+              speed: 1.2,
             },
             effects: [
               // {
