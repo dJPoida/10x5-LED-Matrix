@@ -15,7 +15,7 @@
     "dependencies": {
         "body-parser": "^1.19.0",
         "classnames": "^2.2.6",
-        "express": "^4.17.1",
+        "express": "^4.17.3",
         "html-webpack-harddisk-plugin": "^1.0.1",
         "js-easing-functions": "^1.0.3",
         "mini.css": "^3.0.1",
